@@ -4,7 +4,7 @@ __VERSION__ = "0.0.3"
 __LICENSE__= "MIT License"
 __AUTHOR__ = "Wooloo Studio"
 __AUTHOR_EMAIL__ = "max.wu@wooloostudio.com"
-__URL__ = ""
+__URL__ = "https://github.com/metatutu/metatutu"
 __PROJECT_URLS__ = {
 	"Documentation": "https://github.com/metatutu/metatutu",
 	"Source Code": "https://github.com/metatutu/metatutu",
