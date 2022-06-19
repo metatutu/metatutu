@@ -34,7 +34,7 @@ class Clocker:
 			Each result is in format of (label, duration in seconds).
 		"""
 		results = []
-		if len(self.checkpoints) <= 1: return r
+		if len(self.checkpoints) <= 1: return results
 		last_timestamp = None
 		for (label, timestamp) in self.checkpoints:
 			if last_timestamp is not None:
