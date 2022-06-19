@@ -1,21 +1,21 @@
 import os
 from setuptools import setup, find_packages
 
-# get version information
+#get version information
 here = os.path.abspath(os.path.dirname(__file__))
 filepath = os.path.join(here, "lib", "metatutu", "__version__.py")
 about = {}
 with open(filepath, "r", encoding="utf-8") as f:
     exec(f.read(), None, about)
 
-# get detailed information
+#get detailed information
 filepath = os.path.join(here, "README.md")
 with open(filepath, "r", encoding="utf-8") as f:
     long_description = f.read()
 
-# setup
+#setup
 setup(
-    # version information
+    #version information
     name=about["__NAME__"],
     description=about["__DESC__"],
     version="{}.{}".format(about["__VERSION__"], about["__BUILD__"]),
@@ -25,17 +25,17 @@ setup(
     url=about["__URL__"],
     project_urls=about["__PROJECT_URLS__"],
 
-    # detailed information
+    #detailed information
     long_description=long_description,
     long_description_content_type="text/markdown",
     classifiers=[],
 
-    # package information
+    #package information
     package_dir={"": "lib"},
     packages=find_packages("lib"),
     include_package_data=True,
     
-    # requirements
+    #requirements
     platforms="any",
     python_requires="",
     setup_requires=[],
