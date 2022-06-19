@@ -11,4 +11,3 @@ performance, user experience and reputation.
 
 Thanks for supporting METATUTU and wish you enjoy using it!
 Should you have any suggestion or question, please feel free to contact us.
-
