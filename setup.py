@@ -2,9 +2,9 @@ import os
 from setuptools import setup, find_packages
 
 # get version information
-about = {}
 here = os.path.abspath(os.path.dirname(__file__))
 filepath = os.path.join(here, "lib", "metatutu", "__version__.py")
+about = {}
 with open(filepath, "r", encoding="utf-8") as f:
     exec(f.read(), None, about)
 
