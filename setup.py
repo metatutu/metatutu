@@ -2,15 +2,14 @@ import os
 from setuptools import setup, find_packages
 
 #get version information
-here = os.path.abspath(os.path.dirname(__file__))
-filepath = os.path.join(here, "lib", "metatutu", "__version__.py")
+fpath = os.path.abspath("./lib/metatutu/__version__.py")
 about = {}
-with open(filepath, "r", encoding="utf-8") as f:
+with open(fpath, "r", encoding="utf-8") as f:
     exec(f.read(), None, about)
 
 #get detailed information
-filepath = os.path.join(here, "README.md")
-with open(filepath, "r", encoding="utf-8") as f:
+fpath = os.path.abspath("./README.md")
+with open(fpath, "r", encoding="utf-8") as f:
     long_description = f.read()
 
 #setup
