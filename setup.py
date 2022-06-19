@@ -7,7 +7,6 @@ here = os.path.abspath(os.path.dirname(__file__))
 filepath = os.path.join(here, "lib", "metatutu", "__version__.py")
 with open(filepath, "r", encoding="utf-8") as f:
     exec(f.read(), None, about)
-print(about)
 
 # get detailed information
 filepath = os.path.join(here, "README.md")
@@ -19,7 +18,7 @@ setup(
     # version information
     name=about["__NAME__"],
     description=about["__DESC__"],
-    version=about["__VERSION__"],
+    version="{}.{}".format(about["__VERSION__"], about["__BUILD__"]),
     license=about["__LICENSE__"],
     author=about["__AUTHOR__"],
     author_email=about["__AUTHOR_EMAIL__"],
@@ -37,7 +36,7 @@ setup(
     include_package_data=True,
     
     # requirements
-    platform="any",
+    platforms="any",
     python_requires="",
     setup_requires=[],
     install_requires=[]
