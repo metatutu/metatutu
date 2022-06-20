@@ -79,6 +79,11 @@ def task_package_upload():
 		os.chdir(root_path)
 		os.system("twine upload dist/*")
 
+def task_lib_install_from_code():
+	with task("Install Library from Code"):
+		os.chdir(root_path)
+		os.system("pip install .")
+
 def menu():
 	print("BUILD tool for Metatutu Library")
 	print("Copyright (C) 2022 Wooloo Studio.  All rights reserved.")
@@ -90,6 +95,7 @@ def menu():
 	print("  [D] Clean Package(s)")
 	print("  [E] Build Package(s)")
 	print("  [F] Upload Package(s)")
+	print("  [G] Install Library from Code")
 	print("-" * 60)
 	print("Workflow Commands:")
 	print("  [0] Clean All (A/D)")
@@ -111,6 +117,8 @@ elif command == "E":
 	task_package_build()
 elif command == "F":
 	task_package_upload()
+elif command == "G":
+	task_lib_install_from_code()
 elif command == "0":
 	task_doc_clean()
 	task_package_clean()
