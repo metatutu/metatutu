@@ -3,7 +3,7 @@ import uuid
 import pandas as pd
 from IPython.display import *
 
-__all__ = ["Display", "HTMLDisplay", "ProgressDisplay"]
+__all__ = ["Display", "HTMLDisplay", "ProgressDisplay", "WorkflowWithProgressDisplay"]
 
 class Display:
 	"""Base class of Display classes.
@@ -40,7 +40,8 @@ class HTMLDisplay(Display):
 	"""Display HTML data in Jupyter Notebooks.  
 	
 	This is also the base class of all other Display classes to be displayed
-	with HTML content."""
+	with HTML content.
+	"""
 
 	def __init__(self):
 		Display.__init__(self)
@@ -162,6 +163,7 @@ class ProgressDisplay(HTMLDisplay):
 	If you want to customize the progress text, create derived class and
 	override ``get_text()`` to specify the text format.
 	"""
+
 	def __init__(self):
 		HTMLDisplay.__init__(self)
 		#config
@@ -250,3 +252,27 @@ class ProgressDisplay(HTMLDisplay):
 		if total: self._total = total
 		self._finished = True
 		self._display_html(True)
+
+class WorkflowWithProgressDisplay:
+	"""Simple workflow base class with progress display framework.
+
+	.. note::
+		Although it's recommended to use ProgressDisplay to show the progress,
+		it could also use other alternative implementation.  This class is
+		basically to provide a simple structure could be reused.
+	"""
+
+	def __init__(self, progress_display=None):
+		self._p = progress_display
+		
+	def on_init(self, progress, total):
+		if self._p: self._p.on_init(total)
+		
+	def on_update(self, progress, total):
+		if self._p: self._p.on_update(progress)
+		
+	def on_finish(self, progress, total):
+		if self._p: self._p.on_finish(total)
+
+	def run(self):
+		return False
