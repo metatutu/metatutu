@@ -122,7 +122,6 @@ class FileSystemUtils:
 
 		:returns: A list of full file path meeting criteria.
 		"""
-
 		#normalize filters
 		exts = [x.lower() for x in filters] if filters else None
 
@@ -221,13 +220,14 @@ class TempFileSystemObject:
 		"""Detach the temp file/folder.
 		
 		.. warning::
-			When the temp file/folder is detached, it will not be deleted automatically.
-			So there should be some logic to manage the file/folder to make sure they
-			will not become garbage on file system.
+			When the temp file/folder is detached, it will not be deleted
+			automatically.  So there should be some logic to manage the 
+			file/folder to make sure they will not become garbage on file
+			system.
 
-		This is useful for download kind of use cases.  Before a file is fully downloaded,
-		it is still in a temp status.  When it is fully downloaded, it could be detached
-		and renamed to a permanent file. 
+		This is useful for download kind of use cases.  Before a file is
+		fully downloaded, it is still in a temp status.  When it is fully
+		downloaded, it could be detached and renamed to a permanent file. 
 
 		:returns: Detached temp file/folder path.
 		"""
@@ -360,7 +360,7 @@ class FileSystemDataStore(FileSystemUtils):
 	def create_temp_file(self):
 		"""Create a temp file.
 		
-		:returns:  Returns a TempFile object on success, otherwise it returns None.
+		:returns: Returns a TempFile object on success, otherwise it returns None.
 		"""
 		temp_file = TempFile(self.get_path(self.temp_foldername))
 		if temp_file.path is None: return None
@@ -369,7 +369,7 @@ class FileSystemDataStore(FileSystemUtils):
 	def create_temp_folder(self):
 		"""Create a temp folder.
 		
-		:returns:  Returns a TempFolder object on success, otherwise it returns None.
+		:returns: Returns a TempFolder object on success, otherwise it returns None.
 		"""
 		temp_folder = TempFolder(self.get_path(self.temp_foldername))
 		if temp_folder.path is None: return None
