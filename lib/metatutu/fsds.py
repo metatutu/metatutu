@@ -305,12 +305,13 @@ class FileSystemDataStore(FileSystemUtils):
 		"""Get full path of a file/folder in data store.
 
 		:param fname: File/folder name.
-			.. notes::
-				It could be a standalone name (eg. "abc.txt") or it could be
-				with relative path included (eg. "reports/report1.txt").
 		:param create_parent: Whether to create the parent folder.
 
 		:returns: Full path of the file/folder.
+
+		.. hint::
+			``fname`` could be a specific name (eg. "abc.txt") or it could be
+			with relative path included (eg. "reports/report1.txt").
 		"""
 		fpath = os.path.join(self.root_folderpath, fname)
 		if create_parent: self.create_parent_folder(fpath)
