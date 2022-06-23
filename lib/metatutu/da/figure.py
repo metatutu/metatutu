@@ -128,7 +128,10 @@ class Figure:
 		self._f = plt.figure(figsize=self.figsize)
 
 	def on_paint(self):
-		"""Event handler called when a figure is created and needs to be painted."""
+		"""Event handler called when a figure is created and needs to be painted.
+		
+		:returns: Returns False to stop further workflow.
+		"""
 		pass
 
 	def on_save_figure(self):
@@ -137,7 +140,7 @@ class Figure:
 
 	def on_show_figure(self):
 		"""Event handler called when a figure is being displayed after painted."""
-		self._f.show(warn=False)
+		if not self.no_show: self._f.show(warn=False)
 
 	def paint(self, show_error=False):
 		"""Paint figure.
@@ -159,13 +162,16 @@ class Figure:
 			self.on_create_figure()
 
 			#paint
-			self.on_paint()
+			painted = True
+			r = self.on_paint()
+			if r is not None:
+				if r == False: painted = False
+			if painted:
+				#save figure
+				self.on_save_figure()
 
-			#save figure
-			self.on_save_figure()
-
-			#show figure
-			self.on_show_figure()
+				#show figure
+				self.on_show_figure()
 
 			#delete figure
 			del self._f
