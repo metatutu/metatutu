@@ -37,6 +37,14 @@ metatutu.images module
    :undoc-members:
    :show-inheritance:
 
+metatutu.pipeline module
+------------------------
+
+.. automodule:: metatutu.pipeline
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
