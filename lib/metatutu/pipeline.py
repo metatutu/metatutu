@@ -182,7 +182,8 @@ class Workers:
 		self.__peak_count = 0
 
 	def __del__(self):
-		raise Exception("Not all workers had been dismissed!")
+		if len(self.__list) > 0:
+			raise Exception("Not all workers had been dismissed!")
 
 	def get_count(self):
 		"""Get number of current workers.
