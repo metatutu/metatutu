@@ -347,7 +347,7 @@ class _TaskQueueItem(object):
 
 class TaskQueue(queue.PriorityQueue):
 	"""Task queue."""
-	def __init__(self, maxsize = 0):
+	def __init__(self, maxsize=0):
 		queue.PriorityQueue.__init__(self, maxsize)
 		self.__total_count = 0
 		self.__peak_count = 0
