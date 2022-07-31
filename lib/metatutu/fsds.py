@@ -167,13 +167,50 @@ class FileSystemUtils:
 		:param contents: Text content.
 		:param encoding: Encoding of text file.
 		:param create_parent: Whether to create parent before saving.
+
+		:returns: Result of action.
 		"""
 		try:
 			if create_parent: cls.create_parent_folder(filepath)
 			with open(filepath, "w", encoding=encoding) as f:
 				f.write(contents)
+			return True
 		except:
-			pass
+			return False
+
+	@classmethod
+	def load_file_bytes(cls, filepath):
+		"""Load binary file into a bytes object.
+		
+		:param filepath: File path.
+		
+		:returns: It returns a bytes object with full binary content.
+			If it's failed, returns None.
+		"""
+		try:
+			with open(filepath, "rb") as f:
+				contents = f.read()
+		except:
+			contents = None
+		return contents
+
+	@classmethod
+	def save_file_bytes(cls, filepath, contents, create_parent=True):
+		"""Save bytes object into a binary file.
+
+		:param filepath: File path.
+		:param contents: Bytes object.
+		:param create_parent: Whether to create parent before saving.
+
+		:returns: Result of action.
+		"""
+		try:
+			if create_parent: cls.create_parent_folder(filepath)
+			with open(filepath, "wb") as f:
+				f.write(contents)
+			return True
+		except:
+			return False
 
 class TempFileSystemObject:
 	"""Base class of TempFile and TempFolder."""
