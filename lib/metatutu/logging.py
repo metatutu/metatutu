@@ -11,7 +11,8 @@ __all__ = [
 	"TextLogger",
 	"ConsoleLogger",
 	"TextFileLogger", "FileLogger", "DatedFileLogger",
-	"Loggers"]
+	"Loggers",
+	"LoggerHelper"]
 
 class MessageLevel:
 	"""Message level."""
@@ -369,3 +370,39 @@ class Loggers:
 
 	def exception(self, ex, depth=0, level=MessageLevel.DEBUG):
 		for logger in self.loggers: logger.exception(ex, depth, level)
+
+class LoggerHelper:
+	"""Helper for classes need logging.
+
+	This is to be used to bind a logger with a class which needs logging
+	functions.
+	"""
+	def __init__(self):
+		self._logger = None
+
+	def bind_logger(self, logger):
+		self._logger = logger
+
+	def log(self, message, depth=0, level=MessageLevel.GENERAL):
+		if self._logger: self._logger.log(message, depth, level)
+
+	def debug(self, message, depth=0, level=MessageLevel.DEBUG):
+		if self._logger: self._logger.debug(message, depth, level)
+
+	def info(self, message, depth=0, level=MessageLevel.INFO):
+		if self._logger: self._logger.info(message, depth, level)
+
+	def warning(self, message, depth=0, level=MessageLevel.WARNING):
+		if self._logger: self._logger.warning(message, depth, level)
+
+	def error(self, message, depth=0, level=MessageLevel.ERROR):
+		if self._logger: self._logger.error(message, depth, level)
+
+	def critical(self, message, depth=0, level=MessageLevel.CRITICAL):
+		if self._logger: self._logger.critical(message, depth, level)
+
+	def separator(self, ch="=", width=80, level=MessageLevel.SEPARATOR):
+		if self._logger: self._logger.separator(ch, width, level)
+
+	def exception(self, ex, depth=0, level=MessageLevel.DEBUG):
+		if self._logger: self._logger.exception(ex, depth, level)
