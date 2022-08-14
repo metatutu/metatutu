@@ -6,6 +6,7 @@ import hashlib
 import chardet
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+from bs4 import BeautifulSoup
 from metatutu.logging import *
 from metatutu.fsds import *
 
@@ -162,16 +163,54 @@ class Session(ABC, LoggerHelper):
         """Close the session."""
         pass
 
+    @abstractclassmethod
+    def _get_page(self, url, cache, format, **kwargs):
+        return None
+
+    def get_page(self, url, cache=None, format="soup", **kwargs):
+        """Get page content.
+        
+        :param url: URL.
+        :param cache: Page cache.
+        :param format: Return format of page content.
+            Valid options are "html" and "soup".
+        :param kwargs: Other parameters.
+        :returns: Returns page content in specified format or None on failure.
+        """
+        if format == "html":
+            return self._get_page(url, cache, "html", **kwargs)
+        elif format == "soup":
+            try:
+                html = self.get_page(url, cache, "html", **kwargs)
+                if html is None: return None
+                return BeautifulSoup(html, "html.parser")
+            except Exception as ex:
+                self.exception(ex)
+                return None
+        else:
+            return self._get_page(url, cache, format, **kwargs)
+
     @property
     def handle(self):
         return self.open()
 
     @classmethod
     def wait(cls, secs=1.0):
+        """Wait.
+        
+        :param secs: Time to wait, in seconds.
+        """
         time.sleep(secs)
 
     @classmethod
     def bytes_str(cls, content_bytes, encoding=None):
+        """Convert bytes to str.
+
+        :param content_bytes: Content in bytes.
+        :param encoding: Encoding of content.  
+            If it's None, it will detect the encoding automatically.
+        :returns: The content in string.
+        """
         try:
             if content_bytes is None: return ""
             if encoding: 
@@ -215,15 +254,25 @@ class HttpSession(Session):
             return False
 
     def request(self, method, url, **kwargs):
+        """HTTP request.
+        
+        :param method: The method of HTTP request.
+            Valid options are "GET" and "POST".
+        :param url: URL to be requested.
+        :param retries: Number of retries when request was failed.
+            If it's None, request will not be retried.
+        :param kwargs: Other request parameters.
+        :returns: Response object from HTTP request.  
+            Returns None for invalid calls.
+        """
         #check method
         if method not in ["GET", "POST"]: return None
 
         #check mode
         if "retries" in kwargs:
             #request with retries
-            retries = kwargs["retries"]
+            retries = kwargs.pop("retries", 0)
             if retries < 0: return None
-            del kwargs["retries"]
 
             response = self.request(method, url, **kwargs)
             retry_count = 0
@@ -241,9 +290,8 @@ class HttpSession(Session):
                 s = self.handle
                 if self.user_agent: s.headers["User-Agent"] = self.user_agent
 
-                if "call_tag" in kwargs:
-                    call_tag = kwargs.get("call_tag", None)
-                    del kwargs["call_tag"]
+                call_tag = kwargs.pop("call_tag", None)
+                if call_tag:
                     self.debug("HTTP {} ({}): {}".format(method, call_tag, url))
                 else:
                     self.debug("HTTP {}: {}".format(method, url))
@@ -268,14 +316,37 @@ class HttpSession(Session):
                 return None
 
     def get(self, url, retries=0, **kwargs):
+        """HTTP GET request."""
         kwargs["retries"] = retries
         return self.request("GET", url, **kwargs)
 
     def post(self, url, data=None, json=None, retries=0, **kwargs):
+        """HTTP POST request."""
         kwargs["data"] = data
         kwargs["json"] = json
         kwargs["retries"] = retries
         return self.request("POST", url, **kwargs)
+
+    def _get_page(self, url, cache, format, **kwargs):
+        if format == "html":
+            #read from cache
+            if cache:
+                key = Cache.make_key(url)
+                content = cache.get(key)
+                if content: return self.bytes_str(content)
+            
+            #read from online
+            retries = kwargs.pop("retries", 0)
+            response = self.get(url, retries, **kwargs)
+            if response:
+                if response.status_code == 200:
+                    if cache:
+                        key = Cache.make_key(url)
+                        cache.set(key, response.content)
+                    return self.bytes_str(response.content, response.encoding)
+        
+        #
+        return None
 
 class WebDriverSession(Session):
     """Session with selenium web driver."""
@@ -309,6 +380,7 @@ class WebDriverSession(Session):
             self._handle = None
 
     def get(self, url):
+        """Open URL."""
         try:
             s = self.handle
             self.debug("Web Driver ({}) GET: {}".format(self.webdriver, url))
@@ -322,6 +394,28 @@ class WebDriverSession(Session):
         except Exception as ex:
             self.exception(ex)
             return None
+
+    def _get_page(self, url, cache, format, **kwargs):
+        if format == "html":
+            #read from cache
+            if cache:
+                key = Cache.make_key(url)
+                content = cache.get(key, text_format=True)
+                if content: return content
+
+            #read from online
+            wait = kwargs.pop("wait", 0)
+            self.get(url)
+            self.wait(wait)
+            html = self.get_html()
+            if html:
+                if cache:
+                    key = Cache.make_key(url)
+                    cache.set(key, html, text_format=True)
+                return html
+        
+        #
+        return None
 
     def find_element(self, by=By.ID, value=None):
         try:
@@ -342,24 +436,3 @@ class WebDriverSession(Session):
 
     def find_elements_by_xpath(self, xpath):
         return self.find_elements(By.XPATH, xpath)
-
-if __name__ == "__main2__":
-    cache = FileSystemCache()
-    cache.root_folderpath = "d:\\data\\cache"
-    resource_id = "d:\\address_town_ref.xlsx"
-    data = FileSystemUtils.load_file_bytes(resource_id)
-    key = cache.make_key(resource_id)
-    cache.set(key, data)
-    data2 = cache.get(key)
-    print(data2)
-    time.sleep(5)
-    data3 = cache.get(key, 3)
-    print(data3)
-
-if __name__ == "__main__":
-    logger = ConsoleLogger()
-    session = HttpSession()
-    session.bind_logger(logger)
-    session.get("https://google.com", timeout=2, retries=3)
-
-    session.get("https://jobs.51job.com/all/133571945.html?s=sy_fx_fxlb&t=101", timeout=2, retries=3)
