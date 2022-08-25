@@ -380,6 +380,10 @@ class LoggerHelper:
 	def __init__(self):
 		self._logger = None
 
+	@property
+	def logger(self):
+		return self._logger
+
 	def bind_logger(self, logger):
 		self._logger = logger
 

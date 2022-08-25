@@ -12,7 +12,9 @@ from metatutu.fsds import *
 
 __all__ = [
     "Cache", "FileSystemCache",
-    "Session", "HttpSession", "WebDriverSession"
+    "Session", "HttpSession", "WebDriverSession",
+    "SessionHelper",
+    "Parser"
 ]
 
 class Cache(ABC):
@@ -261,6 +263,8 @@ class HttpSession(Session):
         :param url: URL to be requested.
         :param retries: Number of retries when request was failed.
             If it's None, request will not be retried.
+        :param retry_wait: Time to wait between retries.
+            If it's None, no wait will happen.
         :param kwargs: Other request parameters.
         :returns: Response object from HTTP request.  
             Returns None for invalid calls.
@@ -274,6 +278,8 @@ class HttpSession(Session):
             retries = kwargs.pop("retries", 0)
             if retries < 0: return None
 
+            retry_wait = kwargs.pop("retry_wait", 0)
+
             response = self.request(method, url, **kwargs)
             retry_count = 0
             while True:
@@ -281,6 +287,7 @@ class HttpSession(Session):
                     if response.status_code in self.ok_status_codes: break
                 if retry_count >= retries: return None
                 retry_count += 1
+                if retry_wait > 0: self.wait(retry_wait)
                 kwargs["call_tag"] = "retry {}/{}".format(retry_count, retries)
                 response = self.request(method, url, **kwargs)
             return response
@@ -395,6 +402,15 @@ class WebDriverSession(Session):
             self.exception(ex)
             return None
 
+    def get_soup(self):
+        try:
+            html = self.get_html()
+            if html is None: return None
+            return BeautifulSoup(html, "html.parser")
+        except Exception as ex:
+            self.exception(ex)
+            return None 
+
     def _get_page(self, url, cache, format, **kwargs):
         if format == "html":
             #read from cache
@@ -436,3 +452,26 @@ class WebDriverSession(Session):
 
     def find_elements_by_xpath(self, xpath):
         return self.find_elements(By.XPATH, xpath)
+
+class SessionHelper:
+    """Helper for classes need session."""
+    def __init__(self):
+        self._session = None
+
+    @property
+    def session(self):
+        return self._session
+
+    def bind_session(self, session):
+        self._session = session
+
+class Parser(SessionHelper, LoggerHelper):
+    """Base class of parsers."""
+    def __init__(self):
+        SessionHelper.__init__(self)
+        LoggerHelper.__init__(self)
+        self.cache = None
+
+    def get_page(self, url, cache=None, format="soup", **kwargs):
+        if self.session is None: return None
+        return self.session.get_page(url, self.cache, format, **kwargs)
