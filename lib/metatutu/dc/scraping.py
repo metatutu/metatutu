@@ -92,7 +92,7 @@ class FileSystemCache(Cache):
     :ivar root_folderpath: Root folder path.    
     """
     def __init__(self):
-        #config
+        # config
         self.root_folderpath = None
 
     def _get_filepath(self, key):
@@ -146,7 +146,7 @@ class Session(ABC, LoggerHelper):
     def __init__(self):
         LoggerHelper.__init__(self)
 
-        #control
+        # control
         self._handle = None
 
     def __del__(self):
@@ -229,7 +229,7 @@ class HttpSession(Session):
     def __init__(self):
         Session.__init__(self)
 
-        #config
+        # config
         self.user_agent = None
         self.ok_status_codes = [200]
 
@@ -269,12 +269,12 @@ class HttpSession(Session):
         :returns: Response object from HTTP request.  
             Returns None for invalid calls.
         """
-        #check method
+        # check method
         if method not in ["GET", "POST"]: return None
 
-        #check mode
+        # check mode
         if "retries" in kwargs:
-            #request with retries
+            # request with retries
             retries = kwargs.pop("retries", 0)
             if retries < 0: return None
 
@@ -292,7 +292,7 @@ class HttpSession(Session):
                 response = self.request(method, url, **kwargs)
             return response
         else:
-            #request without retry
+            # request without retry
             try:
                 s = self.handle
                 if self.user_agent: s.headers["User-Agent"] = self.user_agent
@@ -336,13 +336,13 @@ class HttpSession(Session):
 
     def _get_page(self, url, cache, format, **kwargs):
         if format == "html":
-            #read from cache
+            # read from cache
             if cache:
                 key = Cache.make_key(url)
                 content = cache.get(key)
                 if content: return self.bytes_str(content)
             
-            #read from online
+            # read from online
             retries = kwargs.pop("retries", 0)
             response = self.get(url, retries, **kwargs)
             if response:
@@ -360,7 +360,7 @@ class WebDriverSession(Session):
     def __init__(self):
         Session.__init__(self)
 
-        #config
+        # config
         self.webdriver = "chrome"
 
     def open(self):
@@ -413,13 +413,13 @@ class WebDriverSession(Session):
 
     def _get_page(self, url, cache, format, **kwargs):
         if format == "html":
-            #read from cache
+            # read from cache
             if cache:
                 key = Cache.make_key(url)
                 content = cache.get(key, text_format=True)
                 if content: return content
 
-            #read from online
+            # read from online
             wait = kwargs.pop("wait", 0)
             self.get(url)
             self.wait(wait)

@@ -62,16 +62,16 @@ class Worker(ABC, threading.Thread):
 	def __init__(self):
 		threading.Thread.__init__(self)
 
-		#control
+		# control
 		self.__stateLock = threading.Lock()
-		self.__state = 0	#s0(init), s1(hired), s2(working), s3(dismissed)
+		self.__state = 0	# s0(init), s1(hired), s2(working), s3(dismissed)
 
 		self._dismissNotice = threading.Event()
 
 		self._idleLock = threading.Lock()
 		self._idle = True
 
-		#id
+		# id
 		self.id = ""
 
 	def __del__(self):
@@ -109,18 +109,18 @@ class Worker(ABC, threading.Thread):
 
 		:returns: Returns True on success and False on failure.
 		"""
-		#update state: s0(init)->s1(hired)
+		# update state: s0(init)->s1(hired)
 		with self.__stateLock:
 			if self.__state != 0: return False
 			self.__state = 1
 
-		#set id
+		# set id
 		if id is not None:
 			self.id = id
 		else:
 			self.id = str(uuid.uuid4())
 
-		#start working thread
+		# start working thread
 		self._pre_working()
 		try:
 			self.start()
@@ -132,14 +132,14 @@ class Worker(ABC, threading.Thread):
 
 	def dismiss(self):
 		"""Dismiss the worker."""
-		#check state
+		# check state
 		with self.__stateLock:
 			state = self.__state
-			#s1(hired): working thread was not started during hire()
-			#s2(working): normal cases
+			# s1(hired): working thread was not started during hire()
+			# s2(working): normal cases
 			if state != 1 and state != 2: return
 
-		#stop working thread
+		# stop working thread
 		if state == 2:
 			self._dismissNotice.set()
 			try:
@@ -148,16 +148,16 @@ class Worker(ABC, threading.Thread):
 				pass
 		self._post_working()
 
-		#check state
+		# check state
 		with self.__stateLock:
 			if self.__state != 3: raise Exception("Unknown error.")
 
 	def run(self):
-		#update state: s1(hired)->s2(working)
+		# update state: s1(hired)->s2(working)
 		with self.__stateLock:
 			self.__state = 2
 
-		#process
+		# process
 		try:
 			self._start_working()
 			self._process()
@@ -165,7 +165,7 @@ class Worker(ABC, threading.Thread):
 		except Exception as e:
 			self._handle_exception(e)
 
-		#update state: s2(working)->s3(dismissed)
+		# update state: s2(working)->s3(dismissed)
 		with self.__stateLock:
 			self.__state = 3
 
@@ -209,11 +209,11 @@ class Workers:
 		idle_rate = 0.0
 		if count > 0: idle_rate = idle_count / count
 		return {
-			"total_count": total_count,		#number of workers had ever been hired
-			"peak_count": peak_count,		#number of current workers at peak time 
-			"count": count,					#number of current workers
-			"idle_count": idle_count,		#number of idle workers
-			"idle_rate": idle_rate			#idle% = idle_count/count, 0 if no worker is available
+			"total_count": total_count,		# number of workers had ever been hired
+			"peak_count": peak_count,		# number of current workers at peak time 
+			"count": count,					# number of current workers
+			"idle_count": idle_count,		# number of idle workers
+			"idle_rate": idle_rate			# idle% = idle_count/count, 0 if no worker is available
 		}
 
 	def hire(self, workerClass, data=None, id=None):
@@ -225,12 +225,12 @@ class Workers:
 
 		:returns: Number of workers had been hired.
 		"""
-		#hire a worker
+		# hire a worker
 		worker = workerClass()
 		worker.bind(data)
 		if not worker.hire(id): return 0
 
-		#add worker to list
+		# add worker to list
 		with self.__listLock:
 			self.__list.append(worker)
 			self.__total_count += 1
@@ -270,7 +270,7 @@ class Workers:
 
 		:returns: Number of workers had been dismissed.
 		"""
-		#remove worker from list
+		# remove worker from list
 		with self.__listLock:
 			count = len(self.__list)
 			if count <= 0: return 0
@@ -289,7 +289,7 @@ class Workers:
 						break
 			worker = self.__list.pop(index)
 		
-		#dismiss the worker
+		# dismiss the worker
 		worker.dismiss()
 		del worker
 
@@ -318,10 +318,10 @@ class Workers:
 		count = 0
 		with self.__listLock:
 			while len(self.__list) > 0:
-				#remove worker from list
+				# remove worker from list
 				worker = self.__list.pop(-1)
 
-				#dismiss the worker
+				# dismiss the worker
 				worker.dismiss()
 				del worker
 
@@ -366,9 +366,9 @@ class TaskQueue(queue.PriorityQueue):
 			peak_count = self.__peak_count
 			count = self._qsize()
 		return {
-			"total_count": total_count,		#number of tasks had ever been queued
-			"peak_count": peak_count,		#number of tasks at peak time
-			"count": count					#number of current tasks 
+			"total_count": total_count,		# number of tasks had ever been queued
+			"peak_count": peak_count,		# number of tasks at peak time
+			"count": count					# number of current tasks 
 		}
 
 	def push_task(self, task, priority=100, timeout=None):
@@ -384,14 +384,14 @@ class TaskQueue(queue.PriorityQueue):
 		try:
 			if task is None: return False
 
-			#get index
+			# get index
 			with self.mutex:
 				index = self.__total_count + 1
 			
-			#put
+			# put
 			self.put(_TaskQueueItem(index, priority, task), block=True, timeout=timeout)
 
-			#update total & peak count
+			# update total & peak count
 			with self.mutex:
 				self.__total_count += 1
 				if self._qsize() > self.__peak_count: self.__peak_count = self._qsize()
@@ -436,7 +436,7 @@ class Doer(Worker):
 	def __init__(self, maxsize=0):
 		Worker.__init__(self)
 		
-		#task queue
+		# task queue
 		self.task_queue = TaskQueue(maxsize)
 
 	def __del__(self):
@@ -451,23 +451,23 @@ class Doer(Worker):
 	def _process(self):
 		stopping = False
 		while True:
-			#flush all tasks in queue as soon as possible
+			# flush all tasks in queue as soon as possible
 			self._leave_idle()
 			while True:
-				#pop a task
+				# pop a task
 				task = self.task_queue.pop_task()
 				if task is None: break
 
-				#process the task
+				# process the task
 				self._process_task(task)
 			self._enter_idle()
 
-			#check stop flag
+			# check stop flag
 			if stopping: break
 
-			#check stop request
+			# check stop request
 			if self._dismissNotice.is_set():
-				time.sleep(1)	#give one more chance to flush task queue
+				time.sleep(1)	# give one more chance to flush task queue
 				stopping = True
 
 class Operator(Worker):
@@ -497,15 +497,15 @@ class Operator(Worker):
 
 	def _process(self):
 		while True:
-			#pop a task
+			# pop a task
 			task = self._pop_task()
 			if task is not None:
-				#process the task
+				# process the task
 				self._leave_idle()
 				self._process_task(task)
 				self._enter_idle()
 
-			#check stop request
+			# check stop request
 			if self._dismissNotice.is_set(): break
 
 class Controller(Worker):
@@ -548,10 +548,10 @@ class Team(ABC):
 		operators, dismiss controllers, and clear and delete the task queue.
 	"""
 	def __init__(self):
-		#task queue
+		# task queue
 		self.task_queue = None
 
-		#operators
+		# operators
 		self.operator_class = None
 		self.operators = Workers()
 

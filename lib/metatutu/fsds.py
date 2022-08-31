@@ -122,10 +122,10 @@ class FileSystemUtils:
 
 		:returns: A list of full file path meeting criteria.
 		"""
-		#normalize filters
+		# normalize filters
 		exts = [x.lower() for x in filters] if filters else None
 
-		#list files
+		# list files
 		filepaths = []
 		try:
 			fnames = os.listdir(folderpath)

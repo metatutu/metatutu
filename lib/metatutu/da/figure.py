@@ -47,7 +47,7 @@ class Figure:
 	"""
 
 	def __init__(self):
-		#config
+		# config
 		self.figsize = (20, 10)
 		self.layout = (1, 1)
 		self.no_show = False
@@ -57,7 +57,7 @@ class Figure:
 		self.save_tight = False
 		self.data_binding = None
 
-		#control
+		# control
 		self._f = None
 
 	def _get_chart_rect(self, pos=None):
@@ -153,27 +153,27 @@ class Figure:
 		old_backend = matplotlib.get_backend()
 		backend_switched = False
 		try:
-			#switch backend if needed
+			# switch backend if needed
 			if self.no_show:
 				matplotlib.use("agg")
 				backend_switched = True
 
-			#create figure
+			# create figure
 			self.on_create_figure()
 
-			#paint
+			# paint
 			painted = True
 			r = self.on_paint()
 			if r is not None:
 				if r == False: painted = False
 			if painted:
-				#save figure
+				# save figure
 				self.on_save_figure()
 
-				#show figure
+				# show figure
 				self.on_show_figure()
 
-			#delete figure
+			# delete figure
 			del self._f
 			self._f = None
 		except Exception as e:

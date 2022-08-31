@@ -12,10 +12,10 @@ class Display:
 	"""
 
 	def __init__(self):
-		#config
-		self.min_interval = 0.5  #minimum interval between 2 refreshes
+		# config
+		self.min_interval = 0.5  # minimum interval between 2 refreshes
         
-		#control
+		# control
 		self._display_id = None
 		self._last_refresh_ts = time.time()
     
@@ -166,14 +166,14 @@ class ProgressDisplay(HTMLDisplay):
 
 	def __init__(self):
 		HTMLDisplay.__init__(self)
-		#config
+		# config
 		self.show_text = True
 		self.text_prefix = ""
 		self.show_progress_bar = True
 		self.progress_bar_width = "100%"
 		self.hide_progress_bar_on_finished = True
 
-		#control
+		# control
 		self._progress = 0
 		self._total = 100
 		self._finished = False
