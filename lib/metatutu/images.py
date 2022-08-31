@@ -70,7 +70,7 @@ class Images:
 
 		:returns: Returns stitched image object on success or None on failure.
 		"""
-		#pass 1: get min size
+		# pass 1: get min size
 		min_width = 1000000
 		max_width = 0
 		min_height = 1000000
@@ -82,7 +82,7 @@ class Images:
 			min_height = min(height, min_height)
 			max_height = max(height, max_height)
 
-		#pass 2： normalize size and create bitmaps
+		# pass 2： normalize size and create bitmaps
 		bitmaps = []
 		axis = 0
 		if vertical:
@@ -106,7 +106,7 @@ class Images:
 					bitmap = np.array(image)
 				bitmaps.append(bitmap)
 				
-		#stitch bitmaps and create stitched image
+		# stitch bitmaps and create stitched image
 		return Image.fromarray(np.concatenate(tuple(bitmaps), axis=axis))
 
 	def create_gif(self, filepath, duration, loop=0):

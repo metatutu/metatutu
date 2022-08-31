@@ -55,13 +55,13 @@ class Logger(ABC):
 		the threading handling mechanism in Python.  
 	"""
 	def __init__(self):
-		#config
-		self.enabled_level = 0  #record all messages (level >= 0)
+		# config
+		self.enabled_level = 0  # record all messages (level >= 0)
 		self.async_mode = False
 		self.async_queuesize = 100
 		self.async_timeout = None
 
-		#control
+		# control
 		self.__async_logger = None
 		self._log_lock = threading.Lock()
 
@@ -102,10 +102,10 @@ class Logger(ABC):
 	def _log(self, timestamp, message, depth, level): pass
 
 	def __log(self, timestamp, message, depth, level, std_level):
-		#open anyway
+		# open anyway
 		self.open()
 
-		#log
+		# log
 		if level >= self.enabled_level:
 			if self.async_mode:
 				self.__async_logger.task_queue.push_task(
@@ -161,17 +161,17 @@ class TextLogger(Logger):
 	def __init__(self):
 		Logger.__init__(self)
 
-		#config
+		# config
 		self.include_timestamp = True
 		self.use_utc = False
 		self.indent_size = 4
 		self.vline = "|"
 
 	def format_output(self, timestamp, message, depth, level):
-		#separator
+		# separator
 		if level == MessageLevel.SEPARATOR: return message
 
-		#create timestamp text
+		# create timestamp text
 		ts_text = ""
 		if self.include_timestamp:
 			if self.use_utc:
@@ -179,7 +179,7 @@ class TextLogger(Logger):
 			else:
 				ts_text = time.strftime("%Y-%m-%d %H:%M:%S ", time.localtime(timestamp))
 
-		#create message text
+		# create message text
 		message_text = ""
 		if level == MessageLevel.DEBUG:
 			message_text = message
@@ -196,7 +196,7 @@ class TextLogger(Logger):
 		message_lines = message_text.replace("\r\n", "\n").replace("\r", "\n").split("\n")
 		if len(message_lines) == 0: return ts_text
 
-		#create indent text
+		# create indent text
 		indent_size = self.indent_size
 		indent_text = ""
 		if depth < 0: depth = 0
@@ -209,7 +209,7 @@ class TextLogger(Logger):
 			else:
 				indent_text = " " * indent_size
 
-		#format output
+		# format output
 		output_text = ""
 		for i in range(0, len(message_lines)):
 			if i == 0:
@@ -239,12 +239,12 @@ class TextFileLogger(TextLogger):
 	def __init__(self):
 		TextLogger.__init__(self)
 		
-		#config
+		# config
 		self.encoding = "utf-8"
 		self.mode = "a"
 		self.auto_flush = True
 
-		#control
+		# control
 		self._files = []
 
 	def __del__(self):
@@ -253,7 +253,7 @@ class TextFileLogger(TextLogger):
 	def close(self):
 		TextLogger.close(self)
 
-		#close all files
+		# close all files
 		for file in self._files:
 			if file is not None: file.close()
 		self._files.clear()
@@ -273,7 +273,7 @@ class FileLogger(TextFileLogger):
 	def __init__(self, filepath, reset=False):
 		TextFileLogger.__init__(self)
 
-		#control
+		# control
 		self._files = [None]
 		self._filepath = filepath
 		if reset: self.mode = "w"
@@ -293,13 +293,13 @@ class DatedFileLogger(TextFileLogger):
 	def __init__(self, folderpath):
 		TextFileLogger.__init__(self)
 		
-		#control
+		# control
 		self._files = [None]
 		self._folderpath = folderpath
 		self._current_filepath = ""
 
 	def _get_file(self, timestamp, message, depth, level):
-		#get file path
+		# get file path
 		filename = ""
 		if self.use_utc:
 			filename = time.strftime("%Y-%m-%d.log", time.gmtime(timestamp))
@@ -308,13 +308,13 @@ class DatedFileLogger(TextFileLogger):
 		filepath = os.path.join(self._folderpath, filename)
 		if filepath == self._current_filepath: return self._files[0]
 
-		#close current file
+		# close current file
 		if self._files[0]:
 			self._files[0].close()
 			self._files[0] = None
 			self._current_filepath = ""
 		
-		#open file
+		# open file
 		f = None
 		try:
 			f = open(filepath, mode=self.mode, encoding=self.encoding)

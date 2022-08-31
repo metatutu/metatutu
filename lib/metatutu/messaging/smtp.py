@@ -152,7 +152,7 @@ class Message:
                 addresses.append(format_address(item))
             return ",".join(addresses)
 
-        #body
+        # body
         body_type, body_content = self.body
         if body_type == "html":
             part_body = MIMEText(body_content, "html", "utf-8")
@@ -165,20 +165,20 @@ class Message:
         else:
             message = part_body
 
-        #date
+        # date
         message["Date"] = formatdate(self.timeval, self.localtime, self.usegmt)
 
-        #sender
+        # sender
         message["From"] = format_address(self.sender)
 
-        #receivers
+        # receivers
         message["To"] = format_addresses(self.to)
         message["Cc"] = format_addresses(self.cc)
 
-        #subject
+        # subject
         message["Subject"] = Header(self.subject, "utf-8")
 
-        #importance
+        # importance
         if self.importance:
             importance = self.importance.lower()
             if importance == "high":
@@ -188,7 +188,7 @@ class Message:
                 message["X-Priority"] = "5"
                 message["Importance"] = "low"
 
-        #sensitivity
+        # sensitivity
         if self.sensitivity:
             sensitivity = self.sensitivity.lower()
             if sensitivity == "personal":
@@ -198,15 +198,15 @@ class Message:
             elif sensitivity == "confidential":
                 message["Sensitivity"] = "Company-Confidential"
 
-        #delivery notification
+        # delivery notification
         if self.delivery_notification:
             message["Return-Receipt-To"] = format_address(self.sender)
 
-        #read notification
+        # read notification
         if self.read_notification:
             message["Disposition-Notification-To"] = format_address(self.sender)
 
-        #attachments
+        # attachments
         for attachment in self.attachments:
             att = MIMEApplication(attachment[0])
             att["Content-Type"] = "application/octet-stream"
@@ -221,14 +221,14 @@ class Sender(LoggerHelper):
     def __init__(self):
         LoggerHelper.__init__(self)
 
-        #config
+        # config
         self.smtp_host = None
         self.smtp_ssl = True
         self.smtp_port = None
         self.smtp_user = None
         self.smtp_password = None
 
-        #control
+        # control
         self._client = None
 
     def __del__(self):
@@ -242,14 +242,14 @@ class Sender(LoggerHelper):
         try:
             if self._client: return self._client
 
-            #connect SMTP server
+            # connect SMTP server
             self.debug("Connecting SMTP server...")
             if self.smtp_ssl:
                 client = smtplib.SMTP_SSL(self.smtp_host, self.smtp_port)
             else:
                 client = smtplib.SMTP(self.smtp_host, self.smtp_port)
 
-            #login
+            # login
             self.debug("Login to SMTP server...")
             result = client.login(self.smtp_user, self.smtp_password)
             print(result)
@@ -272,7 +272,7 @@ class Sender(LoggerHelper):
         try:
             if self._client is None: return
 
-            #disconnect SMTP server
+            # disconnect SMTP server
             self.debug("Disconnecting SMTP server...")
             self._client.quit()
             self._client = None
@@ -291,12 +291,12 @@ class Sender(LoggerHelper):
         :returns: Returns True on success and False on failure.
         """
         try:
-            #get client
+            # get client
             if reset_connection: self.disconnect()
             client = self.client
             if client is None: return False
 
-            #send
+            # send
             print("sending")
             client.sendmail(
                 message.get_sender_address(),
