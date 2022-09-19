@@ -5,6 +5,7 @@ from email.header import Header
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
 from metatutu.logging import *
+from metatutu.fsds import *
 
 __all__ = ["Message", "Sender"]
 
