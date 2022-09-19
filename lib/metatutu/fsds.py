@@ -1,7 +1,17 @@
+"""
+    This is part of METATUTU library.
+    https://pypi.org/project/metatutu/
+
+	:author: max.wu@wooloostudio.com
+	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:license: see LICENSE.
+"""
+
 import os
 import uuid
 import datetime
 import shutil
+import json
 
 __all__ = ["FileSystemUtils", "TempFile", "TempFolder", "FileSystemDataStore"]
 
@@ -208,6 +218,40 @@ class FileSystemUtils:
 			if create_parent: cls.create_parent_folder(filepath)
 			with open(filepath, "wb") as f:
 				f.write(contents)
+			return True
+		except:
+			return False
+
+	@classmethod
+	def load_file_json(cls, filepath, encoding="utf-8"):
+		"""Load JSON file into a data object.
+		
+		:param filepath: File path.
+		
+		:returns: It returns an object as JSON data describes.
+			If it's failed, returns None.
+		"""
+		try:
+			with open(filepath, "r", encoding=encoding) as f:
+				data = json.load(f)
+			return data
+		except:
+			return None
+
+	@classmethod
+	def save_file_json(cls, filepath, data, encoding="utf-8", create_parent=True):
+		"""Save a data object into a JSON file.
+
+		:param filepath: File path.
+		:param data: Data object.
+		:param encoding: Encoding of JSON file.
+		:param create_parent: Whether to create parent before saving.
+
+		:returns: Result of action.
+		"""
+		try:
+			with open(filepath, "w", encoding=encoding) as f:
+				json.dump(data, f, indent="\t")
 			return True
 		except:
 			return False
