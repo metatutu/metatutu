@@ -10,6 +10,7 @@ Subpackages
    metatutu.da
    metatutu.dc
    metatutu.jupyter
+   metatutu.messaging
 
 Submodules
 ----------
