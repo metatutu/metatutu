@@ -162,7 +162,7 @@ class Session(ABC, LoggerHelper):
         self.close()
 
     @abstractclassmethod
-    def open(self):
+    def open(self, **kwargs):
         """Open the session.
 
         :returns: Returns the open session handle on success or None on failure.
@@ -242,7 +242,7 @@ class HttpSession(Session):
         self.user_agent = None
         self.ok_status_codes = [200]
 
-    def open(self):
+    def open(self, **kwargs):
         try:
             if self._handle: return self._handle
             self.debug("Opening HTTP session...")
@@ -364,6 +364,21 @@ class HttpSession(Session):
         #
         return None
 
+    @classmethod
+    def quick_download(cls, url, filepath, retries=0, create_parent=True, **kwargs):
+        """Download an object and save it to a file."""
+        success = False
+        try:
+            session = HttpSession()
+            response = session.get(url, retries, **kwargs)
+            if response:
+                if response.status_code == 200:
+                    success = FileSystemUtils.save_file_bytes(filepath, response.content, create_parent)
+            session.close()
+        except:
+            pass
+        return success
+
 class WebDriverSession(Session):
     """Session with selenium web driver."""
     def __init__(self):
@@ -372,16 +387,16 @@ class WebDriverSession(Session):
         # config
         self.webdriver = "chrome"
 
-    def open(self):
+    def open(self, **kwargs):
         try:
             if self._handle: return self._handle
             self.debug("Opening web driver ({}) session...".format(self.webdriver))
             if self.webdriver == "chrome":
-                self._handle = webdriver.Chrome()
+                self._handle = webdriver.Chrome(**kwargs)
             elif self.webdriver == "firefox":
-                self._handle = webdriver.Firefox()
+                self._handle = webdriver.Firefox(**kwargs)
             elif self.webdriver == "edge":
-                self._handle = webdriver.Edge()
+                self._handle = webdriver.Edge(**kwargs)
             else:
                 raise Exception("Invalid webdriver.")
             return self._handle
@@ -390,26 +405,27 @@ class WebDriverSession(Session):
             return None
 
     def close(self):
-        if self._handle:
+        try:
+            if self._handle is None: return
             self.debug("Closing web driver ({}) session...".format(self.webdriver))
             self._handle.close()
+            self._handle = None
+        except Exception as ex:
+            self.exception(ex)
             self._handle = None
 
     def get(self, url):
         """Open URL."""
         try:
-            s = self.handle
             self.debug("Web Driver ({}) GET: {}".format(self.webdriver, url))
-            s.get(url)
+            self.handle.get(url)
+            return True
         except Exception as ex:
             self.exception(ex)
+            return False
 
     def get_html(self):
-        try:
-            return self.handle.execute_script("return document.documentElement.outerHTML")
-        except Exception as ex:
-            self.exception(ex)
-            return None
+        return self.execute("return document.documentElement.outerHTML")
 
     def get_soup(self):
         try:
@@ -442,25 +458,102 @@ class WebDriverSession(Session):
         #
         return None
 
-    def find_element(self, by=By.ID, value=None):
+    def get_url(self, leading_wait=2.0, timeout=10.0, wait=0.5):
+        """Get current URL.
+        
+        :param leading_wait: Wait time before getting URL, in seconds.
+        :param timeout: Timeout, in seconds.
+        :param wait: Wait time between each retry, in seconds.
+        
+        :returns: Returns current URL or None on failure. 
+        """
+        if leading_wait > 0.0: time.sleep(leading_wait)
+        ts_0 = time.perf_counter()
+        url = None
+        while True:
+            try:
+                url = self.handle.current_url
+                if url:
+                    self.debug("Current URL is: {}".format(url))
+                    return url
+            except:
+                pass
+
+            if time.perf_counter() - ts_0 > timeout:
+                self.warning("URL is not obtained!")
+                return None
+            
+            time.sleep(wait)        
+
+    def find_element(self, value, base=None, timeout=10.0, wait=0.5, by=By.XPATH):
+        """Find element from base node.
+        
+        :param value: Element to ne searched.
+        :param base: Base node.  If it's None, search from root.
+        :param timeout: Timeout, in seconds.  It will keep trying to find the
+            expected element until timeout.
+        :param wait: Wait time between each retry, in seconds.
+        :param by: Value type.
+
+        :returns: Returns the element found or None.
+        """
+        ts_0 = time.perf_counter()
+        if base is None: base = self.handle
+        while True:
+            try:
+                element = base.find_element(by, value)
+                if element: return element
+            except:
+                pass
+            
+            if time.perf_counter() - ts_0 > timeout:
+                self.warning("Element '{}' is not found!".format(value))
+                return None
+
+            time.sleep(wait)
+
+    def find_elements(self, value, base=None, timeout=10.0, wait=0.5, by=By.XPATH):
+        """Find elements from base node.
+        
+        :param value: Elements to ne searched.
+        :param base: Base node.  If it's None, search from root.
+        :param timeout: Timeout, in seconds.  It will keep trying to find the
+            expected element until timeout.
+        :param wait: Wait time between each retry, in seconds.
+        :param by: Value type.
+
+        :returns: Returns the elements found or None.
+        """        
+        ts_0 = time.perf_counter()
+        if base is None: base = self.handle
+        while True:
+            try:
+                elements = base.find_elements(by, value)
+                if elements:
+                    self.debug("{} elements had been found as '{}'.".format(len(elements), value))
+                    return elements
+            except:
+                pass
+
+            if time.perf_counter() - ts_0 > timeout:
+                self.warning("Element(s) '{}' is not found.".format(value))
+                return None
+            
+            time.sleep(wait)
+
+    def execute(self, script, *args):
+        """Execute script.
+        
+        :param script: Script to be executed.
+        :param *args: Other arguments.
+
+        :returns: Returns script result or None on failure.
+        """
         try:
-            return self.handle.find_element(by, value)
+            return self.handle.execute_script(script, *args)
         except Exception as ex:
             self.exception(ex)
             return None
-
-    def find_elements(self, by=By.ID, value=None):
-        try:
-            return self.handle.find_elements(by, value)
-        except Exception as ex:
-            self.exception(ex)
-            return None
-
-    def find_element_by_xpath(self, xpath):
-        return self.find_element(By.XPATH, xpath)
-
-    def find_elements_by_xpath(self, xpath):
-        return self.find_elements(By.XPATH, xpath)
 
 class SessionHelper:
     """Helper for classes need session."""
