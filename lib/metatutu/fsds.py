@@ -47,12 +47,24 @@ class FileSystemUtils:
 	def make_file_path(cls, ref_filepath, filename):
 		"""Make a file path in same folder as reference file.
 
-		:param ref_filepath:  Reference file path.  eg. `__file__`
+		:param ref_filepath: Reference file path.  eg. `__file__`
 		:param filename: Filename of the path to be created.
 
 		:returns: Returns the full path of the file with filename.		
 		"""
 		return os.path.join(os.path.dirname(os.path.abspath(ref_filepath)), filename)
+
+	@classmethod
+	def normalize_fname(cls, fname):
+		"""Normalize filename.
+		
+		:param fname: Original filename.
+		:returns: Returns the normalized filename.
+		"""
+		fname = fname.strip()
+		c_list = ['\\', '/', ':', '*', '?', '<', '>', '|', '"', '\t', '\b', '\n', '\r']
+		for c in c_list: fname = fname.replace(c, "")
+		return fname
   
 	@classmethod
 	def file_exists(cls, filepath):
