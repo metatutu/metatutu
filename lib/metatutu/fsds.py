@@ -42,7 +42,18 @@ class FileSystemUtils:
 		"""
 		parent_folderpath = os.path.split(fpath)[0]
 		return cls.create_folder(parent_folderpath)
-        
+
+	@classmethod
+	def make_file_path(cls, ref_filepath, filename):
+		"""Make a file path in same folder as reference file.
+
+		:param ref_filepath:  Reference file path.  eg. `__file__`
+		:param filename: Filename of the path to be created.
+
+		:returns: Returns the full path of the file with filename.		
+		"""
+		return os.path.join(os.path.dirname(os.path.abspath(ref_filepath)), filename)
+  
 	@classmethod
 	def file_exists(cls, filepath):
 		"""Check whether file exists.
