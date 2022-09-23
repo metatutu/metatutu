@@ -555,6 +555,28 @@ class WebDriverSession(Session):
             self.exception(ex)
             return None
 
+    def get_sizes(self):
+        """Get sizes of the screen, window and content.
+        
+        :returns: Returns the sizes of current status, or None on failure.
+        """
+        return self.execute("""
+            return {
+                "screen.width": window.screen.width,
+                "screen.height": window.screen.height,
+                "screen.client.width": window.screen.availWidth,
+                "screen.client.height": window.screen.availHeight,
+                "window.width": window.outerWidth,
+                "window.height": window.outerHeight,
+                "window.client.width": window.innerWidth,
+                "window.client.height": window.innerHeight,
+                "page.width": document.documentElement.scrollWidth,
+                "page.height": document.documentElement.scrollHeight,
+                "page.client.width": document.documentElement.clientWidth,
+                "page.client.height": document.documentElement.clientHeight
+            }
+        """)
+
 class SessionHelper:
     """Helper for classes need session."""
     def __init__(self):
@@ -577,3 +599,4 @@ class Parser(SessionHelper, LoggerHelper):
     def get_page(self, url, cache=None, format="soup", **kwargs):
         if self.session is None: return None
         return self.session.get_page(url, self.cache, format, **kwargs)
+
