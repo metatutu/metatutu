@@ -12,6 +12,7 @@ import uuid
 import datetime
 import shutil
 import json
+import tempfile
 
 __all__ = ["FileSystemUtils", "TempFile", "TempFolder", "FileSystemDataStore"]
 
@@ -44,15 +45,26 @@ class FileSystemUtils:
 		return cls.create_folder(parent_folderpath)
 
 	@classmethod
-	def make_file_path(cls, ref_filepath, filename):
-		"""Make a file path in same folder as reference file.
+	def alter_fname(cls, ref_filepath, fname):
+		"""Replace the file/folder name.
 
 		:param ref_filepath: Reference file path.  eg. `__file__`
-		:param filename: Filename of the path to be created.
+		:param fname: File/folder name.
 
-		:returns: Returns the full path of the file with filename.		
+		:returns: Returns the full path of new file/folder with new name.	
 		"""
-		return os.path.join(os.path.dirname(os.path.abspath(ref_filepath)), filename)
+		return os.path.join(os.path.dirname(os.path.abspath(ref_filepath)), fname)
+
+	@classmethod
+	def alter_ext(cls, ref_filepath, ext):
+		"""Replace the extension.
+		
+		:param ref_filepath: Reference file path.  eg. `__file__`
+		:param ext: File extension.  eg. ".log"
+
+		:returns: Returns the full path of new file/folder with new extension.
+		"""
+		return os.path.splitext(os.path.abspath(ref_filepath))[0] + ext
 
 	@classmethod
 	def normalize_fname(cls, fname):
@@ -288,13 +300,13 @@ class TempFileSystemObject:
 
 	def __del__(self):
 		self.delete()
-    
+
 	@property
 	def path(self):
 		"""Temp file/folder path."""
 		return self._fpath
         
-	def create(self, temp_folderpath):
+	def create(self, temp_folderpath=None):
 		"""Create a temp file/folder.
 		
 		:param temp_folderpath: Temp folder path.
@@ -302,6 +314,7 @@ class TempFileSystemObject:
 		:returns: Returns temp file/folder path if it's created successfully.
 			Otherwise, it returns None.
 		"""
+		if temp_folderpath is None: temp_folderpath = tempfile.gettempdir()
 		while True:
 			fpath = os.path.join(temp_folderpath, str(uuid.uuid4()))
 			if not os.path.exists(fpath): break
@@ -351,18 +364,18 @@ class TempFileSystemObject:
 class TempFile(TempFileSystemObject):
 	"""Temp file."""
 
-	def __init__(self, temp_folderpath):
+	def __init__(self, temp_folderpath=None):
 		super().__init__()
 		self._is_folder = False
-		if temp_folderpath: self.create(temp_folderpath)
+		self.create(temp_folderpath)
 
 class TempFolder(TempFileSystemObject):
 	"""Temp folder."""
 
-	def __init__(self, temp_folderpath):
+	def __init__(self, temp_folderpath=None):
 		super().__init__()
 		self._is_folder = True
-		if temp_folderpath: self.create(temp_folderpath)
+		self.create(temp_folderpath)
 
 class FileSystemDataStore(FileSystemUtils):
 	r"""File system data store.

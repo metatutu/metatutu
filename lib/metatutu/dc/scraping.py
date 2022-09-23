@@ -16,8 +16,8 @@ import chardet
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-from metatutu.logging import *
-from metatutu.fsds import *
+from metatutu.logging import LoggerHelper
+from metatutu.fsds import FileSystemUtils, FileSystemDataStore
 
 __all__ = [
     "Cache", "FileSystemCache",
