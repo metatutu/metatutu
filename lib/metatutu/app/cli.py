@@ -61,7 +61,7 @@ class CLIApp:
 
         try:
             f = find_workflow_handler(workflow_name)
-            if f is None: f = self.workflow_not_dispatched()
+            if f is None: f = self.workflow_not_dispatched(workflow_name)
             return f()
         except:
             return -1
@@ -77,11 +77,12 @@ class CLIApp:
         """
         return 0
 
-    def workflow_not_dispatched(self):
+    def workflow_not_dispatched(self, workflow_name):
         """Handler for case that workflow is not dispatched.
         
         This will be called by framework when workflow could not be dispatched.
 
+        :param workflow_name: Workflow name.
         :returns: Returns the exit code of the program.      
         """
         return -1
