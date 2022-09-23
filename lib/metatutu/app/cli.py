@@ -8,6 +8,7 @@
 """
 
 import sys
+import getopt
 
 class CLIApp:
     """Base class of CLI applications."""
@@ -113,3 +114,56 @@ class CLIApp:
             #cleanup application
             self.cleanup_app()
         sys.exit(exit_code)
+    
+    @classmethod
+    def parse_command_line(cls, options, command_count=0):
+        """Parse command line.
+
+        Command line syntax is as:
+        program <command 1> <command 2> ... [option 1] [option 2] ...
+
+        Commands are required and options are optional.
+
+        :param options: A list of option formats stored as (name, short, long).
+            "name" is used to query option value.  "short" is the short format.
+            "long" is the long format.
+        :param command_count: Number of commands.
+        :returns: Returns a dict as {"commands": [...], "options": {...}, "args": [...]}
+            "commands" is a list of all commands from the command line.
+            "options" is a dict with option values.  The key is "name".
+            "args" is a list of remaining arguments not parsed.
+            If it failed to parse the command line, it will return None.
+        """
+        try:
+            #check command line arguments
+            if len(sys.argv) < 1 + command_count: return None
+            
+            #get commands
+            r_commands = []
+            for i in range(0, command_count):
+                r_commands.append(sys.argv[1 + i])
+
+            #get options
+            r_options = {}
+            shortopts = ""
+            longopts = []
+            for option in options:
+                shortopts += option[1]
+                longopts.append(option[2])
+            print(shortopts)
+            print(longopts)
+            opts, args = getopt.getopt(sys.argv[1 + command_count:], shortopts, longopts)
+            print(opts)
+            for opt_name, opt_value in opts:
+                for option in options:
+                    if opt_name in (option[1].replace(":", ""), "--" + option[2].replace("=", "")):
+                        r_options[option[0]] = opt_value
+            
+            #
+            return {
+                "commands": r_commands,
+                "options": r_options,
+                "args": args
+            }
+        except:
+            return None
