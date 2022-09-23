@@ -7,6 +7,7 @@ Subpackages
 .. toctree::
    :maxdepth: 4
 
+   metatutu.app
    metatutu.da
    metatutu.dc
    metatutu.jupyter
