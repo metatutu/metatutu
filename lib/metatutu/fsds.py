@@ -12,6 +12,7 @@ import uuid
 import datetime
 import shutil
 import json
+import tempfile
 
 __all__ = ["FileSystemUtils", "TempFile", "TempFolder", "FileSystemDataStore"]
 
@@ -299,13 +300,13 @@ class TempFileSystemObject:
 
 	def __del__(self):
 		self.delete()
-    
+
 	@property
 	def path(self):
 		"""Temp file/folder path."""
 		return self._fpath
         
-	def create(self, temp_folderpath):
+	def create(self, temp_folderpath=None):
 		"""Create a temp file/folder.
 		
 		:param temp_folderpath: Temp folder path.
@@ -313,6 +314,7 @@ class TempFileSystemObject:
 		:returns: Returns temp file/folder path if it's created successfully.
 			Otherwise, it returns None.
 		"""
+		if temp_folderpath is None: temp_folderpath = tempfile.gettempdir()
 		while True:
 			fpath = os.path.join(temp_folderpath, str(uuid.uuid4()))
 			if not os.path.exists(fpath): break
@@ -362,18 +364,18 @@ class TempFileSystemObject:
 class TempFile(TempFileSystemObject):
 	"""Temp file."""
 
-	def __init__(self, temp_folderpath):
+	def __init__(self, temp_folderpath=None):
 		super().__init__()
 		self._is_folder = False
-		if temp_folderpath: self.create(temp_folderpath)
+		self.create(temp_folderpath)
 
 class TempFolder(TempFileSystemObject):
 	"""Temp folder."""
 
-	def __init__(self, temp_folderpath):
+	def __init__(self, temp_folderpath=None):
 		super().__init__()
 		self._is_folder = True
-		if temp_folderpath: self.create(temp_folderpath)
+		self.create(temp_folderpath)
 
 class FileSystemDataStore(FileSystemUtils):
 	r"""File system data store.
