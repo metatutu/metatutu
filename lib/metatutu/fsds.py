@@ -44,15 +44,26 @@ class FileSystemUtils:
 		return cls.create_folder(parent_folderpath)
 
 	@classmethod
-	def make_file_path(cls, ref_filepath, filename):
-		"""Make a file path in same folder as reference file.
+	def alter_fname(cls, ref_filepath, fname):
+		"""Replace the file/folder name.
 
 		:param ref_filepath: Reference file path.  eg. `__file__`
-		:param filename: Filename of the path to be created.
+		:param fname: File/folder name.
 
-		:returns: Returns the full path of the file with filename.		
+		:returns: Returns the full path of new file/folder with new name.	
 		"""
-		return os.path.join(os.path.dirname(os.path.abspath(ref_filepath)), filename)
+		return os.path.join(os.path.dirname(os.path.abspath(ref_filepath)), fname)
+
+	@classmethod
+	def alter_ext(cls, ref_filepath, ext):
+		"""Replace the extension.
+		
+		:param ref_filepath: Reference file path.  eg. `__file__`
+		:param ext: File extension.  eg. ".log"
+
+		:returns: Returns the full path of new file/folder with new extension.
+		"""
+		return os.path.splitext(os.path.abspath(ref_filepath))[0] + ext
 
 	@classmethod
 	def normalize_fname(cls, fname):
