@@ -577,6 +577,37 @@ class WebDriverSession(Session):
             }
         """)
 
+    def save_screenshot(self, filepath):
+        """Save screenshot as png file.
+
+        :param filepath: File path.
+        :returns: Returns True on success or False on failure.
+        """
+        return self.handle.save_screenshot(filepath)
+    
+    def save_html(self, filepath):
+        """Save current HTML as file.
+        
+        :param filepath: File path.
+        :returns: Returns True on success or False on failure.
+        """
+        html = self.get_html()
+        if html is None: return False
+        return FileSystemUtils.save_file_contents(filepath, html)
+
+    def capture_snapshot(self, filename, folderpath=None, with_html=True, with_screenshot=True):
+        """Capture a snapshot.
+
+        :param filename: Filename of the snapshot.  No extension is needed.
+        :param folderpath: Where the file will be created.  If's None, use current working folder.
+        :param with_html: Whether to save HTML.
+        :param with_screenshot: Whether to save screenshot.
+        """
+        if folderpath is None: folderpath = ""
+        filepath = os.path.join(os.path.abspath(folderpath), filename)
+        if with_html: self.save_html(FileSystemUtils.alter_ext(filepath, ".html"))
+        if with_screenshot: self.save_screenshot(FileSystemUtils.alter_ext(filepath, ".png"))
+
 class SessionHelper:
     """Helper for classes need session."""
     def __init__(self):
@@ -599,4 +630,3 @@ class Parser(SessionHelper, LoggerHelper):
     def get_page(self, url, cache=None, format="soup", **kwargs):
         if self.session is None: return None
         return self.session.get_page(url, self.cache, format, **kwargs)
-
