@@ -116,54 +116,70 @@ class CLIApp:
         sys.exit(exit_code)
     
     @classmethod
-    def parse_command_line(cls, options, command_count=0):
+    def parse_command_line(cls, parts):
         """Parse command line.
 
         Command line syntax is as:
         program <command 1> <command 2> ... [option 1] [option 2] ...
 
-        Commands are required and options are optional.
+        Commands are required and options are optional.  Commands are
+        always before options.
 
-        :param options: A list of option formats stored as (name, short, long).
-            "name" is used to query option value.  "short" is the short format.
-            "long" is the long format.
-        :param command_count: Number of commands.
-        :returns: Returns a dict as {"commands": [...], "options": {...}, "args": [...]}
-            "commands" is a list of all commands from the command line.
-            "options" is a dict with option values.  The key is "name".
-            "args" is a list of remaining arguments not parsed.
-            If it failed to parse the command line, it will return None.
+        :param parts: This is a list of argument definitions.
+            Each list item specify one arguments to be read from command line.
+            The item is in a tuple as (name, short, long).
+            "name" is used to query the argument value.  "__args__" is reserved name.
+            "short" is the short format of option.  eg. "-t:" expects an option
+            given as "-t <value>", "-i" expects an option wihtout value.
+            "long" is the long format of option.  eg. "time=" expects an option
+            given as "--time=<value>", "id" expects an option given as "--id".
+            For more information of "short" and "long", check `getopt.getopt()`.
+            When "short" and "long" are both empty (""), it specifies a command.
+        :returns: Returns a dict as {"name": value}.
+            "name" is what specified in `parts` for commands and options.
+            The value is typically a str value read from command line.
+            If the option is not with value, with its existence in the dict,
+            it means it's specified in the command line.
+            The value of key "__args__" is with the remaining arguments not parsed.
+            It returns None on failure of parsing command line.
         """
         try:
-            #check command line arguments
-            if len(sys.argv) < 1 + command_count: return None
-            
-            #get commands
-            r_commands = []
-            for i in range(0, command_count):
-                r_commands.append(sys.argv[1 + i])
-
-            #get options
-            r_options = {}
+            #preprocess parts
+            parts_commands = []
+            parts_options = []
             shortopts = ""
             longopts = []
-            for option in options:
-                shortopts += option[1]
-                longopts.append(option[2])
-            print(shortopts)
-            print(longopts)
-            opts, args = getopt.getopt(sys.argv[1 + command_count:], shortopts, longopts)
-            print(opts)
-            for opt_name, opt_value in opts:
-                for option in options:
-                    if opt_name in (option[1].replace(":", ""), "--" + option[2].replace("=", "")):
-                        r_options[option[0]] = opt_value
+            for name, short, long in parts:
+                if short == "" and long == "":
+                    parts_commands.append(name)
+                else:
+                    shortopts += short
+                    longopts.append(long)
+                    formats = []
+                    if short != "": formats.append(short.replace(":", ""))
+                    if long != "": formats.append("--" + long.replace("=", ""))
+                    parts_options.append((
+                        name, 
+                        [short.replace(":", ""), "--" + long.replace("=", "")]))
             
+            #get commands
+            r = {}
+            command_count = len(parts_commands)
+            if len(sys.argv) < 1 + command_count: return None
+            for i in range(0, command_count):
+                r[parts_commands[i]] = sys.argv[1 + i]
+            
+            #get options
+            opts, args = getopt.getopt(sys.argv[1 + command_count:], shortopts, longopts)
+            for opt_name, opt_value in opts:
+                for name, formats in parts_options:
+                    if opt_name in formats:
+                        r[name] = opt_value
+            
+            #get args
+            r["__args__"] = args
+
             #
-            return {
-                "commands": r_commands,
-                "options": r_options,
-                "args": args
-            }
+            return r
         except:
             return None
