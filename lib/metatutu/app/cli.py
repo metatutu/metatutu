@@ -144,7 +144,7 @@ class CLIApp:
             It returns None on failure of parsing command line.
         """
         try:
-            #preprocess parts
+            #process parts
             parts_commands = []
             parts_options = []
             shortopts = ""
@@ -158,9 +158,7 @@ class CLIApp:
                     formats = []
                     if short != "": formats.append(short.replace(":", ""))
                     if long != "": formats.append("--" + long.replace("=", ""))
-                    parts_options.append((
-                        name, 
-                        [short.replace(":", ""), "--" + long.replace("=", "")]))
+                    parts_options.append((name, formats))
             
             #get commands
             r = {}
