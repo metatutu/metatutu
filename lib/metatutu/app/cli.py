@@ -7,11 +7,23 @@
 	:license: see LICENSE.
 """
 
+import os
 import sys
 import getopt
+from metatutu.logging import LoggerHelper, Loggers
 
-class CLIApp:
+class CLIApp(LoggerHelper):
     """Base class of CLI applications."""
+    def __init__(self):
+        LoggerHelper.__init__(self)
+
+        #initialize loggers
+        self.loggers = Loggers()
+        self.bind_logger(self.loggers)
+
+    def register_logger(self, logger):
+        self.loggers.register_logger(logger)
+
     def init_app(self):
         """Initialize the application.
         
@@ -34,6 +46,19 @@ class CLIApp:
         """
         return "default"
 
+    def _globals(self):
+        """Global namespace for workflow handler searching.
+        
+        When dispatching workflow, if the handler is not found within
+        the members, it could alternatively search in a global namespace,
+        so that the workflow handler could be as a regular function.
+        If application needs to have this capability, simple implement
+        this with below code:
+
+            def _globals(self): return globals()
+        """
+        return None
+
     def run_workflow(self, workflow_name):
         """Run the workflow.
         
@@ -54,15 +79,17 @@ class CLIApp:
                     if callable(f): return f
 
                 #find handler in globals
-                f = globals().get(handler_name)
-                if callable(f): return f
+                x_globals = self._globals()
+                if x_globals:
+                    f = x_globals.get(handler_name)
+                    if callable(f): return f
             except:
                 pass
             return None
 
         try:
             f = find_workflow_handler(workflow_name)
-            if f is None: f = self.workflow_not_dispatched(workflow_name)
+            if f is None: return self.on_workflow_not_dispatched(workflow_name)
             return f()
         except:
             return -1
@@ -78,7 +105,7 @@ class CLIApp:
         """
         return 0
 
-    def workflow_not_dispatched(self, workflow_name):
+    def on_workflow_not_dispatched(self, workflow_name):
         """Handler for case that workflow is not dispatched.
         
         This will be called by framework when workflow could not be dispatched.
@@ -93,18 +120,19 @@ class CLIApp:
         
         This will be called by framework before exiting program.
         """
-        pass
+        #cleanup loggers
+        self.loggers.close()
 
     def main(self):
         """Application framework."""
         exit_code = -1
         try:
             #initialize application
-            if not self.init_app(): return exit_code
+            if not self.init_app(): raise Exception()
 
             #determine workflow
             workflow_name = self.determine_workflow()
-            if workflow_name is None: return exit_code
+            if workflow_name is None: raise Exception()
 
             #run workflow
             exit_code = self.run_workflow(workflow_name)
@@ -113,8 +141,8 @@ class CLIApp:
         finally:
             #cleanup application
             self.cleanup_app()
-        sys.exit(exit_code)
-    
+        os._exit(exit_code)
+
     @classmethod
     def parse_command_line(cls, parts):
         """Parse command line.
@@ -127,21 +155,29 @@ class CLIApp:
 
         :param parts: This is a list of argument definitions.
             Each list item specify one arguments to be read from command line.
-            The item is in a tuple as (name, short, long).
-            "name" is used to query the argument value.  "__args__" is reserved name.
+            The item is in a tuple as (key, short, long).
+            "key" is used to query the argument value.
+            "__" prefixed key names are reserved for internal use.
             "short" is the short format of option.  eg. "-t:" expects an option
             given as "-t <value>", "-i" expects an option wihtout value.
             "long" is the long format of option.  eg. "time=" expects an option
             given as "--time=<value>", "id" expects an option given as "--id".
             For more information of "short" and "long", check `getopt.getopt()`.
             When "short" and "long" are both empty (""), it specifies a command.
-        :returns: Returns a dict as {"name": value}.
-            "name" is what specified in `parts` for commands and options.
+        :returns: Returns a dict as {key: value}.
+            "key" is what specified in `parts` for commands and options.
             The value is typically a str value read from command line.
             If the option is not with value, with its existence in the dict,
-            it means it's specified in the command line.
-            The value of key "__args__" is with the remaining arguments not parsed.
-            It returns None on failure of parsing command line.
+            it means it had been specified in the command line.
+            There are some special keys: "__cmd__" is with the full command line,
+            "__argn__" is with the number of arguments and "__argv0__" is
+            the first item of `sys.argv[]` which is the program.  "__args__" is
+            with remaining arguments not parsed.
+            If there is no argument at all (run program directly), it will returns
+            "__cmd__", "__argn__" and "__argv0__" only.
+            If there is argument given but not matching the syntax as expected,
+            it will return None.  If there is other unknown error, it will return
+            None as well.
         """
         try:
             #process parts
@@ -159,9 +195,15 @@ class CLIApp:
                     if short != "": formats.append(short.replace(":", ""))
                     if long != "": formats.append("--" + long.replace("=", ""))
                     parts_options.append((name, formats))
+
+            #get basic information
+            r = {}
+            r["__cmd__"] = " ".join(sys.argv)
+            r["__argn__"] = len(sys.argv)
+            r["__argv0__"] = sys.argv[0]
+            if len(sys.argv) <= 1: return r
             
             #get commands
-            r = {}
             command_count = len(parts_commands)
             if len(sys.argv) < 1 + command_count: return None
             for i in range(0, command_count):
