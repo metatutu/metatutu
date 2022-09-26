@@ -386,6 +386,9 @@ class WebDriverSession(Session):
 
         # config
         self.webdriver = "chrome"
+        self.default_timeout = 10.0
+        self.default_wait = 0.5
+        self.default_by = By.XPATH
 
     def open(self, **kwargs):
         try:
@@ -458,7 +461,7 @@ class WebDriverSession(Session):
         #
         return None
 
-    def get_url(self, leading_wait=2.0, timeout=10.0, wait=0.5):
+    def get_url(self, leading_wait=2.0, timeout=None, wait=None):
         """Get current URL.
         
         :param leading_wait: Wait time before getting URL, in seconds.
@@ -467,6 +470,8 @@ class WebDriverSession(Session):
         
         :returns: Returns current URL or None on failure. 
         """
+        if timeout is None: timeout = self.default_timeout
+        if wait is None: wait = self.default_wait
         if leading_wait > 0.0: time.sleep(leading_wait)
         ts_0 = time.perf_counter()
         url = None
@@ -485,7 +490,7 @@ class WebDriverSession(Session):
             
             time.sleep(wait)        
 
-    def find_element(self, value, base=None, timeout=10.0, wait=0.5, by=By.XPATH):
+    def find_element(self, value, base=None, timeout=None, wait=None, by=None):
         """Find element from base node.
         
         :param value: Element to ne searched.
@@ -497,6 +502,9 @@ class WebDriverSession(Session):
 
         :returns: Returns the element found or None.
         """
+        if timeout is None: timeout = self.default_timeout
+        if wait is None: wait = self.default_wait
+        if by is None: by = self.default_by
         ts_0 = time.perf_counter()
         if base is None: base = self.handle
         while True:
@@ -512,7 +520,7 @@ class WebDriverSession(Session):
 
             time.sleep(wait)
 
-    def find_elements(self, value, base=None, timeout=10.0, wait=0.5, by=By.XPATH):
+    def find_elements(self, value, base=None, timeout=None, wait=None, by=None):
         """Find elements from base node.
         
         :param value: Elements to ne searched.
@@ -523,7 +531,10 @@ class WebDriverSession(Session):
         :param by: Value type.
 
         :returns: Returns the elements found or None.
-        """        
+        """
+        if timeout is None: timeout = self.default_timeout
+        if wait is None: wait = self.default_wait
+        if by is None: by = self.default_by
         ts_0 = time.perf_counter()
         if base is None: base = self.handle
         while True:
@@ -576,6 +587,20 @@ class WebDriverSession(Session):
                 "page.client.height": document.documentElement.clientHeight
             }
         """)
+
+    def get_element_path(self, element):
+        """Get element's full path.
+        
+        :returns: Returns the full path of the element, or None on failure.
+        """
+        s = ""
+        s += 'function metatutu_get_path(node){'
+        s += '  if (node == null) return "";'
+        s += '  if (node.parentNode == null) return "/.";'
+        s += '  return metatutu_get_path(node.parentNode) + "/" + node.tagName;'
+        s += '}'
+        s += 'return metatutu_get_path(arguments[0]);'
+        return self.execute(s, element)
 
     def save_screenshot(self, filepath):
         """Save screenshot as png file.
