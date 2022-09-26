@@ -13,7 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.header import Header
 from email.mime.text import MIMEText
 from email.mime.application import MIMEApplication
-from metatutu.logging import LoggerHelper
+from metatutu.logging import LoggerHelper, MessageLevel
 from metatutu.fsds import FileSystemUtils
 
 __all__ = ["Message", "Sender"]
@@ -38,7 +38,7 @@ class Message:
 
     def set_sender(self, address, name=None):
         """Set sender.
-        
+
         :param address: E-mail address of the sender.
         :param name: Name of the sender.
         """
@@ -46,7 +46,7 @@ class Message:
 
     def add_receiver(self, address, name=None, type="to"):
         """Add a receiver.
-        
+
         :param address: E-mail address of the receiver.
         :param name: Name of the receiver.
         :param type: Type of receiver.  Valid options are "to", "cc" and "bcc".
@@ -57,10 +57,10 @@ class Message:
             self.cc.append((name, address))
         elif type == "bcc":
             self.bcc.append((name, address))
-    
+
     def add_receivers(self, receivers, type="to"):
         """Add receivers.
-        
+
         :param receivers: List of receivers with items as (name, address).
         :param type: Type of receivers.  Valid options are "to", "cc" and "bcc".
         """
@@ -70,17 +70,17 @@ class Message:
             self.cc += receivers
         elif type == "bcc":
             self.bcc += receivers
-    
+
     def set_subject(self, subject):
         """Set subject.
-        
+
         :param subject: E-mail subject.
         """
         self.subject = subject
 
     def add_attachment(self, filepath, as_filename):
         """Add an attachment.
-        
+
         :param filepath: The path of the file to be attached.
         :param as_filename: The filename to be displayed in the e-mail message.
         :returns: Returns True on success and False on failure.
@@ -92,7 +92,7 @@ class Message:
 
     def set_body(self, body, type="plain"):
         """Set E-mail body.
-        
+
         :param body: E-mail body.
         :param type: Body type.  Valid options are "plain" and "html".
         """
@@ -103,7 +103,7 @@ class Message:
 
     def set_date(self, timeval=None, localtime=False, usegmt=False):
         """Set date.
-        
+
         :param timeval: Timestamp.  If it's None, use current time.
         :param localtime: Whether timeval is in local time or UTC.
         :param usegmt: Whether timezone is written out as ascii string.
@@ -114,18 +114,18 @@ class Message:
 
     def set_importance(self, importance):
         """Set importance.
-        
+
         :param importance: Valid options are None, "high" and "low".
         """
         self.importance = importance
 
     def set_sensitivity(self, sensitivity):
         """Set sensitivity.
-        
+
         :param sensitivity: Valid options are None, "personal", "private" and "confidential".
         """
         self.sensitivity = sensitivity
-    
+
     def get_sender_address(self):
         """Get sender's E-mail address."""
         if self.sender:
@@ -246,7 +246,7 @@ class Sender(LoggerHelper):
 
     def connect(self):
         """Connect to SMTP server and login.
-        
+
         :returns: Returns SMTP client handler on success and None on failure.
         """
         try:
@@ -264,11 +264,11 @@ class Sender(LoggerHelper):
             result = client.login(self.smtp_user, self.smtp_password)
             print(result)
             if result is None:
-                self.error("Login failed!")
+                self.error("Login failed!", level=MessageLevel.DEBUG)
                 client.quit()
                 return None
             if result[0] != 235:
-                self.error("Login failed! ({})".format(result[0]))
+                self.error("Login failed! ({})".format(result[0]), level=MessageLevel.DEBUG)
                 client.quit()
                 return None
             self._client = client
@@ -295,7 +295,7 @@ class Sender(LoggerHelper):
 
     def send(self, message, reset_connection=False):
         """Send message.
-        
+
         :param message: Message object.
         :param reset_connection: Whether to reset the connection.
         :returns: Returns True on success and False on failure.
