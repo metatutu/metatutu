@@ -16,7 +16,7 @@ import chardet
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
-from metatutu.logging import LoggerHelper
+from metatutu.logging import LoggerHelper, MessageLevel
 from metatutu.fsds import FileSystemUtils, FileSystemDataStore
 
 __all__ = [
@@ -56,7 +56,7 @@ class Cache(ABC):
     @abstractclassmethod
     def remove(self, key):
         """Remove the key value.
-        
+
         :param key: Key.
         """
         pass
@@ -64,12 +64,12 @@ class Cache(ABC):
     @abstractclassmethod
     def get(self, key, valid_period=0, text_format=False):
         """Get key value.
-        
+
         :param key: Key.
         :param valid_period: Valid period of cached value (seconds).
             If it's 0, the key value is valid forever.
         :param text_format: Whether the value is in string or bytes format.
-        
+
         :return: It returns the cached value if it's hit.  Otherwise, it returns None.
         """
         pass
@@ -88,7 +88,7 @@ class Cache(ABC):
         """Make a unique key of a resource.
 
         :param resource_id: This is a string to identify the resource.
-            Typically, it is a URL of a page in web scraping application.        
+            Typically, it is a URL of a page in web scraping application.
         """
         return hashlib.md5(resource_id.encode(encoding="utf-8")).hexdigest()
 
@@ -98,7 +98,7 @@ class FileSystemCache(Cache):
     All cached data will be stored in a folder on file system.
     Each key value will be saved as a single file with the name as same as the key.
 
-    :ivar root_folderpath: Root folder path.    
+    :ivar root_folderpath: Root folder path.
     """
     def __init__(self):
         # config
@@ -107,7 +107,7 @@ class FileSystemCache(Cache):
     def _get_filepath(self, key):
         fsds = FileSystemDataStore(self.root_folderpath)
         return fsds.get_path(key, True)
-    
+
     def set(self, key, value, text_format=False):
         fpath = self._get_filepath(key)
         if value is None:
@@ -149,7 +149,7 @@ class Session(ABC, LoggerHelper):
 
     In this scrapping framework, session is defined as the controller to access
     the web.  It's used from the first access to the specific website till the
-    last access.  One session instance is with one base method.  Method could 
+    last access.  One session instance is with one base method.  Method could
     be implemented with HTTP requests, seleiumn webdrivers, and so on.
     """
     def __init__(self):
@@ -180,7 +180,7 @@ class Session(ABC, LoggerHelper):
 
     def get_page(self, url, cache=None, format="soup", **kwargs):
         """Get page content.
-        
+
         :param url: URL.
         :param cache: Page cache.
         :param format: Return format of page content.
@@ -208,7 +208,7 @@ class Session(ABC, LoggerHelper):
     @classmethod
     def wait(cls, secs=1.0):
         """Wait.
-        
+
         :param secs: Time to wait, in seconds.
         """
         time.sleep(secs)
@@ -218,13 +218,13 @@ class Session(ABC, LoggerHelper):
         """Convert bytes to str.
 
         :param content_bytes: Content in bytes.
-        :param encoding: Encoding of content.  
+        :param encoding: Encoding of content.
             If it's None, it will detect the encoding automatically.
         :returns: The content in string.
         """
         try:
             if content_bytes is None: return ""
-            if encoding: 
+            if encoding:
                 if encoding == "ISO-8859-1": encoding = None
             if encoding is None: encoding = chardet.detect(content_bytes)["encoding"]
             if encoding == "GB2312": encoding = "GBK"
@@ -266,7 +266,7 @@ class HttpSession(Session):
 
     def request(self, method, url, **kwargs):
         """HTTP request.
-        
+
         :param method: The method of HTTP request.
             Valid options are "GET" and "POST".
         :param url: URL to be requested.
@@ -275,7 +275,7 @@ class HttpSession(Session):
         :param retry_wait: Time to wait between retries.
             If it's None, no wait will happen.
         :param kwargs: Other request parameters.
-        :returns: Response object from HTTP request.  
+        :returns: Response object from HTTP request.
             Returns None for invalid calls.
         """
         # check method
@@ -314,7 +314,7 @@ class HttpSession(Session):
 
                 if method == "GET":
                     response = s.get(
-                        url, 
+                        url,
                         **kwargs)
                 elif method == "POST":
                     response = s.post(
@@ -350,7 +350,7 @@ class HttpSession(Session):
                 key = Cache.make_key(url)
                 content = cache.get(key)
                 if content: return self.bytes_str(content)
-            
+
             # read from online
             retries = kwargs.pop("retries", 0)
             response = self.get(url, retries, **kwargs)
@@ -360,7 +360,7 @@ class HttpSession(Session):
                         key = Cache.make_key(url)
                         cache.set(key, response.content)
                     return self.bytes_str(response.content, response.encoding)
-        
+
         #
         return None
 
@@ -437,7 +437,7 @@ class WebDriverSession(Session):
             return BeautifulSoup(html, "html.parser")
         except Exception as ex:
             self.exception(ex)
-            return None 
+            return None
 
     def _get_page(self, url, cache, format, **kwargs):
         if format == "html":
@@ -457,18 +457,18 @@ class WebDriverSession(Session):
                     key = Cache.make_key(url)
                     cache.set(key, html, text_format=True)
                 return html
-        
+
         #
         return None
 
     def get_url(self, leading_wait=2.0, timeout=None, wait=None):
         """Get current URL.
-        
+
         :param leading_wait: Wait time before getting URL, in seconds.
         :param timeout: Timeout, in seconds.
         :param wait: Wait time between each retry, in seconds.
-        
-        :returns: Returns current URL or None on failure. 
+
+        :returns: Returns current URL or None on failure.
         """
         if timeout is None: timeout = self.default_timeout
         if wait is None: wait = self.default_wait
@@ -485,14 +485,14 @@ class WebDriverSession(Session):
                 pass
 
             if time.perf_counter() - ts_0 > timeout:
-                self.warning("URL is not obtained!")
+                self.warning("URL is not obtained!", level=MessageLevel.DEBUG)
                 return None
-            
-            time.sleep(wait)        
+
+            time.sleep(wait)
 
     def find_element(self, value, base=None, timeout=None, wait=None, by=None):
         """Find element from base node.
-        
+
         :param value: Element to ne searched.
         :param base: Base node.  If it's None, search from root.
         :param timeout: Timeout, in seconds.  It will keep trying to find the
@@ -513,16 +513,16 @@ class WebDriverSession(Session):
                 if element: return element
             except:
                 pass
-            
+
             if time.perf_counter() - ts_0 > timeout:
-                self.warning("Element '{}' is not found!".format(value))
+                self.warning("Element '{}' is not found!".format(value), level=MessageLevel.DEBUG)
                 return None
 
             time.sleep(wait)
 
     def find_elements(self, value, base=None, timeout=None, wait=None, by=None):
         """Find elements from base node.
-        
+
         :param value: Elements to ne searched.
         :param base: Base node.  If it's None, search from root.
         :param timeout: Timeout, in seconds.  It will keep trying to find the
@@ -547,14 +547,14 @@ class WebDriverSession(Session):
                 pass
 
             if time.perf_counter() - ts_0 > timeout:
-                self.warning("Element(s) '{}' is not found.".format(value))
+                self.warning("Element(s) '{}' is not found.".format(value), level=MessageLevel.DEBUG)
                 return None
-            
+
             time.sleep(wait)
 
     def execute(self, script, *args):
         """Execute script.
-        
+
         :param script: Script to be executed.
         :param *args: Other arguments.
 
@@ -568,7 +568,7 @@ class WebDriverSession(Session):
 
     def get_sizes(self):
         """Get sizes of the screen, window and content.
-        
+
         :returns: Returns the sizes of current status, or None on failure.
         """
         return self.execute("""
@@ -590,7 +590,7 @@ class WebDriverSession(Session):
 
     def get_element_path(self, element):
         """Get element's full path.
-        
+
         :returns: Returns the full path of the element, or None on failure.
         """
         s = ""
@@ -609,10 +609,10 @@ class WebDriverSession(Session):
         :returns: Returns True on success or False on failure.
         """
         return self.handle.save_screenshot(filepath)
-    
+
     def save_html(self, filepath):
         """Save current HTML as file.
-        
+
         :param filepath: File path.
         :returns: Returns True on success or False on failure.
         """
@@ -632,26 +632,3 @@ class WebDriverSession(Session):
         filepath = os.path.join(os.path.abspath(folderpath), filename)
         if with_html: self.save_html(FileSystemUtils.alter_ext(filepath, ".html"))
         if with_screenshot: self.save_screenshot(FileSystemUtils.alter_ext(filepath, ".png"))
-
-class SessionHelper:
-    """Helper for classes need session."""
-    def __init__(self):
-        self._session = None
-
-    @property
-    def session(self):
-        return self._session
-
-    def bind_session(self, session):
-        self._session = session
-
-class Parser(SessionHelper, LoggerHelper):
-    """Base class of parsers."""
-    def __init__(self):
-        SessionHelper.__init__(self)
-        LoggerHelper.__init__(self)
-        self.cache = None
-
-    def get_page(self, url, cache=None, format="soup", **kwargs):
-        if self.session is None: return None
-        return self.session.get_page(url, self.cache, format, **kwargs)
