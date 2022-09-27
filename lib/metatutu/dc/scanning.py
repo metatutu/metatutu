@@ -24,7 +24,7 @@ class SiteScanner(LoggerHelper):
 		"""Remove all search paths."""
 		self.search_paths = []
 
-	def add_search_paths(self, path):
+	def add_search_path(self, path):
 		"""Add a search path.
 
 		Search paths are alternative paths to be scanned in addition to the
