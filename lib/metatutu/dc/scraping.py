@@ -632,26 +632,3 @@ class WebDriverSession(Session):
         filepath = os.path.join(os.path.abspath(folderpath), filename)
         if with_html: self.save_html(FileSystemUtils.alter_ext(filepath, ".html"))
         if with_screenshot: self.save_screenshot(FileSystemUtils.alter_ext(filepath, ".png"))
-
-class SessionHelper:
-    """Helper for classes need session."""
-    def __init__(self):
-        self._session = None
-
-    @property
-    def session(self):
-        return self._session
-
-    def bind_session(self, session):
-        self._session = session
-
-class Parser(SessionHelper, LoggerHelper):
-    """Base class of parsers."""
-    def __init__(self):
-        SessionHelper.__init__(self)
-        LoggerHelper.__init__(self)
-        self.cache = None
-
-    def get_page(self, url, cache=None, format="soup", **kwargs):
-        if self.session is None: return None
-        return self.session.get_page(url, self.cache, format, **kwargs)
