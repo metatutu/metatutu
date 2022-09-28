@@ -129,6 +129,8 @@ class SiteScanner(LoggerHelper):
 	def _get_search_urls(self, url, scan_search_paths_for_home_only):
 		search_urls = []
 		urlparts = urlparse(url)
+		if urlparts.scheme == "": return search_urls
+		if urlparts.netloc == "": return search_urls
 		if scan_search_paths_for_home_only:
 			if urlparts.path not in ("", "/"): return search_urls
 		base_url = urlparts.scheme + "://" + urlparts.netloc

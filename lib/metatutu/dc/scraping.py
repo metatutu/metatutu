@@ -303,6 +303,9 @@ class HttpSession(Session):
         else:
             # request without retry
             try:
+                if url is None: return None
+                if url == "": return None
+
                 s = self.handle
                 if self.user_agent: s.headers["User-Agent"] = self.user_agent
 
