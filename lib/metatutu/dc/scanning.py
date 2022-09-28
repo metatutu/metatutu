@@ -42,8 +42,10 @@ class SiteScanner(LoggerHelper):
 		"""Add a detector.
 
 		:param name: Detector name.  It will be used for output dataset as well.
-		:param patterns: List of regex patterns to search the data from page.
-		:param exclusions: List of content which should not be in search result.
+		:param patterns: List of regex patterns to search the data from content.
+		:param exclusions: List of regex patterns to exclude the data from search results.
+			If the found data from content is fully matching any pattern in exclusions,
+			it will not be included in the search results.
 		"""
 		self.detectors[name] = {
 			"patterns": patterns,
@@ -75,7 +77,7 @@ class SiteScanner(LoggerHelper):
 						#whether it should be excluded
 						excluded = False
 						for exclusion in detector["exclusions"]:
-							if candidate.find(exclusion) >= 0:
+							if re.fullmatch(exclusion, candidate):
 								excluded = True
 								break
 						if excluded: continue
@@ -103,8 +105,6 @@ class SiteScanner(LoggerHelper):
 		"""
 		try:
 			session = HttpSession()
-			session.bind_logger(self.logger)
-			session.user_agent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/33.0.1750.517 Safari/537.36"
 			html = session.get_page(url, format="html", timeout=10.0)
 			session.close()
 			return html
