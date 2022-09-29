@@ -11,6 +11,7 @@ import os
 import uuid
 import datetime
 import shutil
+import re
 import json
 import tempfile
 
@@ -22,9 +23,8 @@ class FileSystemUtils:
 	@classmethod
 	def create_folder(cls, folderpath):
 		"""Create a folder.
-		
-		:param folderpath: Folder path.
 
+		:param folderpath: Folder path.
 		:returns: Returns True if folder exists, otherwise it returns False.
 		"""
 		try:
@@ -38,7 +38,6 @@ class FileSystemUtils:
 		"""Create parent folder.
 
 		:param fpath: File/folder path located under parent folder.
-
 		:returns: Returns True if folder exists, otherwise it returns False.
 		"""
 		parent_folderpath = os.path.split(fpath)[0]
@@ -50,18 +49,16 @@ class FileSystemUtils:
 
 		:param ref_filepath: Reference file path.  eg. `__file__`
 		:param fname: File/folder name.
-
-		:returns: Returns the full path of new file/folder with new name.	
+		:returns: Returns the full path of new file/folder with new name.
 		"""
 		return os.path.join(os.path.dirname(os.path.abspath(ref_filepath)), fname)
 
 	@classmethod
 	def alter_ext(cls, ref_filepath, ext):
 		"""Replace the extension.
-		
+
 		:param ref_filepath: Reference file path.  eg. `__file__`
 		:param ext: File extension.  eg. ".log"
-
 		:returns: Returns the full path of new file/folder with new extension.
 		"""
 		return os.path.splitext(os.path.abspath(ref_filepath))[0] + ext
@@ -69,7 +66,7 @@ class FileSystemUtils:
 	@classmethod
 	def normalize_fname(cls, fname):
 		"""Normalize filename.
-		
+
 		:param fname: Original filename.
 		:returns: Returns the normalized filename.
 		"""
@@ -77,23 +74,21 @@ class FileSystemUtils:
 		c_list = ['\\', '/', ':', '*', '?', '<', '>', '|', '"', '\t', '\b', '\n', '\r']
 		for c in c_list: fname = fname.replace(c, "")
 		return fname
-  
+
 	@classmethod
 	def file_exists(cls, filepath):
 		"""Check whether file exists.
 
 		:param filepath: File path.
-
 		:returns: True if the file exists and False if it doesn't.
 		"""
 		return os.path.isfile(filepath)
-    
+
 	@classmethod
 	def folder_exists(cls, folderpath):
 		"""Check whether folder exists.
-		
-		:param folderpath: Folder path.
 
+		:param folderpath: Folder path.
 		:returns: True if the folder exists and False if it doesn't.
 		"""
 		return os.path.isdir(folderpath)
@@ -103,7 +98,6 @@ class FileSystemUtils:
 		"""Delete a file.
 
 		:param filepath: File path.
-
 		:returns: Result of action.
 		"""
 		try:
@@ -117,7 +111,6 @@ class FileSystemUtils:
 		"""Delete a folder.
 
 		:param folderpath: Folder path.
-
 		:returns: Result of action.
 		"""
 		try:
@@ -132,7 +125,6 @@ class FileSystemUtils:
 
 		:param source_filepath: Source file path.
 		:param dest_filepath: Destination file path.
-		
 		:returns: Result of action.
 		"""
 		try:
@@ -147,7 +139,6 @@ class FileSystemUtils:
 
 		:param source_filepath: Source file path.
 		:param dest_filepath: Destination file path.
-		
 		:returns: Result of action.
 		"""
 		try:
@@ -157,35 +148,93 @@ class FileSystemUtils:
 		return True
 
 	@classmethod
-	def list_files(cls, folderpath, filters=None):
-		"""List files in a folder.
-		
+	def list_all(cls, folderpath, recursive=False):
+		"""List all files and folders in a folder.
+
 		:param folderpath: Folder path.
-		:param filters: Filters of file extension.  eg. [".jpg", ".bmp"]
-			If it's None, then list all files.
-			Otherwise, list all files with extension in the filters.
-
-		:returns: A list of full file path meeting criteria.
+		:param recursive: Whether to look into subfolders.
+		:returns: Returns a list of all files/folders, or None on failure.
+			List item is as (path, is_folder), `path` is the full path of the
+			file/folder, and `is_folder` is boolean value to show whether it
+			is a folder (True) or a file (False).
 		"""
-		# normalize filters
-		exts = [x.lower() for x in filters] if filters else None
-
-		# list files
-		filepaths = []
-		try:
+		def __walk(folderpath, l, recursive):
 			fnames = os.listdir(folderpath)
 			for fname in fnames:
-				filepath = os.path.join(folderpath, fname)
-				if not os.path.isfile(filepath): continue
-				if exts is None:
-					filepaths.append(filepath)
+				fpath = os.path.join(folderpath, fname)
+				if os.path.isfile(fpath):
+					l.append((fpath, False))
 				else:
-					if os.path.splitext(fname)[1].lower() in exts:
-						filepaths.append(filepath)
-		except:
-			filepaths = None
+					l.append((fpath, True))
+					if recursive:
+						if not __walk(fpath, l, recursive): return False
+			return True
 
-		return filepaths
+		l = []
+		if not __walk(os.path.abspath(folderpath), l, recursive): return None
+		return l
+
+	@classmethod
+	def list(cls, folderpath, pattern=".*", recursive=False,
+		match_fullpath=False,
+		include_files=True, include_folders=True):
+		"""List all files and folders matching pattern in a folder.
+
+		:param folderpath: Folder path.
+		:param pattern: RegEx pattern to match file/folder.  In lower cases.
+		:param recursive:  Whether to look into subfolders.
+		:param match_fullpath: Whether to match file/folder name or full path.
+			If it's True, match full path.  Otherwise, match file/folder name.
+		:param include_files: Whether to include files.
+		:param include_folders: Whether to include folders.
+		:returns: Returns a list of all filees/folders matching pattern, or None
+			on failure.
+		"""
+		l = []
+		items = cls.list_all(folderpath, recursive)
+		if items is None: return None
+		for fpath, is_folder in items:
+			#file/folder filter
+			if is_folder:
+				if not include_folders: continue
+			else:
+				if not include_files: continue
+
+			#pattern filter
+			if match_fullpath:
+				text = fpath.lower()
+			else:
+				text = os.path.basename(fpath).lower()
+			if re.fullmatch(pattern, text): l.append((fpath, is_folder))
+		return l
+
+	@classmethod
+	def list_files(cls, folderpath, pattern=".*", recursive=False, match_fullpath=False):
+		"""List all files matching pattern in a folder.
+
+		See `list()` for parameter definitions.
+
+		:returns: Returns a list of file paths matching pattern, or None on failure.
+		"""
+		l = []
+		items = cls.list(folderpath, pattern, recursive, match_fullpath, True, False)
+		if items is None: return None
+		for item in items: l.append(item[0])
+		return l
+
+	@classmethod
+	def list_folders(cls, folderpath, pattern=".*", recursive=False, match_fullpath=False):
+		"""List all folders matching pattern in a folder.
+
+		See `list()` for parameter definitions.
+
+		:returns: Returns a list of folder paths matching pattern, or None on failure.
+		"""
+		l = []
+		items = cls.list(folderpath, pattern, recursive, match_fullpath, False, True)
+		if items is None: return None
+		for item in items: l.append(item[0])
+		return l
 
 	@classmethod
 	def load_file_contents(cls, filepath, encoding="utf-8"):
@@ -193,7 +242,6 @@ class FileSystemUtils:
 
 		:param filepath: File path.
 		:param encoding: Encoding of text file.
-
 		:returns: It returns a string with full text content.
 			If it's failed, returns None.
 		"""
@@ -212,7 +260,6 @@ class FileSystemUtils:
 		:param contents: Text content.
 		:param encoding: Encoding of text file.
 		:param create_parent: Whether to create parent before saving.
-
 		:returns: Result of action.
 		"""
 		try:
@@ -226,9 +273,8 @@ class FileSystemUtils:
 	@classmethod
 	def load_file_bytes(cls, filepath):
 		"""Load binary file into a bytes object.
-		
+
 		:param filepath: File path.
-		
 		:returns: It returns a bytes object with full binary content.
 			If it's failed, returns None.
 		"""
@@ -246,7 +292,6 @@ class FileSystemUtils:
 		:param filepath: File path.
 		:param contents: Bytes object.
 		:param create_parent: Whether to create parent before saving.
-
 		:returns: Result of action.
 		"""
 		try:
@@ -260,9 +305,8 @@ class FileSystemUtils:
 	@classmethod
 	def load_file_json(cls, filepath, encoding="utf-8"):
 		"""Load JSON file into a data object.
-		
+
 		:param filepath: File path.
-		
 		:returns: It returns an object as JSON data describes.
 			If it's failed, returns None.
 		"""
@@ -281,7 +325,6 @@ class FileSystemUtils:
 		:param data: Data object.
 		:param encoding: Encoding of JSON file.
 		:param create_parent: Whether to create parent before saving.
-
 		:returns: Result of action.
 		"""
 		try:
@@ -305,12 +348,12 @@ class TempFileSystemObject:
 	def path(self):
 		"""Temp file/folder path."""
 		return self._fpath
-        
+
 	def create(self, temp_folderpath=None):
 		"""Create a temp file/folder.
-		
+
 		:param temp_folderpath: Temp folder path.
-		
+
 		:returns: Returns temp file/folder path if it's created successfully.
 			Otherwise, it returns None.
 		"""
@@ -324,7 +367,7 @@ class TempFileSystemObject:
 			FileSystemUtils.save_file_contents(fpath, "")
 			if not FileSystemUtils.file_exists(fpath): return None
 		return self.attach(fpath)
-    
+
 	def attach(self, fpath):
 		"""Attach a file/folder as temp file.
 
@@ -332,26 +375,26 @@ class TempFileSystemObject:
 		"""
 		self.delete()
 		self._fpath = fpath
-    
+
 	def detach(self):
 		"""Detach the temp file/folder.
-		
+
 		.. warning::
 			When the temp file/folder is detached, it will not be deleted
-			automatically.  So there should be some logic to manage the 
+			automatically.  So there should be some logic to manage the
 			file/folder to make sure they will not become garbage on file
 			system.
 
 		This is useful for download kind of use cases.  Before a file is
 		fully downloaded, it is still in a temp status.  When it is fully
-		downloaded, it could be detached and renamed to a permanent file. 
+		downloaded, it could be detached and renamed to a permanent file.
 
 		:returns: Detached temp file/folder path.
 		"""
 		fpath = self._fpath
 		self._fpath = None
 		return fpath
-    
+
 	def delete(self):
 		"""Delete the temp file/folder."""
 		if self._fpath:
@@ -436,7 +479,7 @@ class FileSystemDataStore(FileSystemUtils):
 
 	def get_parent_path(self, fname):
 		"""Get the parent folder path of the file/folder in data store.
-		
+
 		:param fname: File/folder name.
 
 		:returns: Full path of the parent folder path of the file/folder.
@@ -445,7 +488,7 @@ class FileSystemDataStore(FileSystemUtils):
 
 	def get_dated_path(self, fname, date=None, create_parent=False):
 		"""Get full path of a dated file/folder in data store.
-		
+
 		:param fname: File/folder name.
 		:param date: Specify the date.  If it is None, use today's date.
 		:param create_parent: Whether to create the parent folder.
@@ -476,7 +519,7 @@ class FileSystemDataStore(FileSystemUtils):
 
 	def create_temp_file(self):
 		"""Create a temp file.
-		
+
 		:returns: Returns a TempFile object on success, otherwise it returns None.
 		"""
 		temp_file = TempFile(self.get_path(self.temp_foldername))
@@ -485,7 +528,7 @@ class FileSystemDataStore(FileSystemUtils):
 
 	def create_temp_folder(self):
 		"""Create a temp folder.
-		
+
 		:returns: Returns a TempFolder object on success, otherwise it returns None.
 		"""
 		temp_folder = TempFolder(self.get_path(self.temp_foldername))
