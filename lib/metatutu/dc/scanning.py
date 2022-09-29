@@ -127,6 +127,16 @@ class SiteScanner(LoggerHelper):
 			return None
 
 	def _get_search_urls(self, url, scan_search_paths_for_home_only):
+		"""Get search URLs.
+
+		Derived class could override it to add more search URLs based on
+		searching strategies.  For example, to look into all linked pages
+		on entrance page.
+
+		:param url: Entrance page URL.
+		:param scan_search_paths_for_home_only: see `scan_site()`.
+		:returns: Returns a list of search URLs.
+		"""
 		search_urls = []
 		urlparts = urlparse(url)
 		if urlparts.scheme == "": return search_urls
@@ -137,6 +147,19 @@ class SiteScanner(LoggerHelper):
 		for search_path in self.search_paths:
 			search_urls.append(base_url + search_path)
 		return search_urls
+
+	def _check_data_status(self, data):
+		"""Check data status to see whether it should stop scanning.
+
+		Derived class could override it to check the status of data, and judge
+		whether the scanning could be stopped based on scanning strategy.
+		The check will happen when switching page.
+
+		:param data: Snapshot of data.
+		:returns: Returns True to continue scanning.  It it returns False,
+			scanning will be stopped.
+		"""
+		return True
 
 	def scan_site(self, url, scan_search_paths_for_home_only=True):
 		"""Scan site content and extract data.
@@ -163,6 +186,7 @@ class SiteScanner(LoggerHelper):
 			#scan search paths
 			search_urls = self._get_search_urls(url, scan_search_paths_for_home_only)
 			for search_url in search_urls:
+				if not self._check_data_status(data): break
 				data_page = self.scan_page(search_url)
 				if data_page:
 					for name in self.detectors.keys():
