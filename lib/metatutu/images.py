@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -27,14 +27,14 @@ class Images:
 
 	def append(self, image):
 		"""Append an image to the list.
-		
+
 		:param image: Image object.
 		"""
 		self.images.append(image)
 
 	def append_file(self, filepath, mode=None):
 		"""Append an image from file to the list.
-		
+
 		:param filepath: Image file path.
 		:param mode: Expected image mode in memory.
 			If it is specified, it will convert the image into the mode.
@@ -52,7 +52,7 @@ class Images:
 			return True
 		except:
 			return False
-	
+
 	def append_files(self, filepaths, mode=None):
 		"""Append images from files to the list.
 
@@ -114,13 +114,13 @@ class Images:
 				else:
 					bitmap = np.array(image)
 				bitmaps.append(bitmap)
-				
+
 		# stitch bitmaps and create stitched image
 		return Image.fromarray(np.concatenate(tuple(bitmaps), axis=axis))
 
 	def create_gif(self, filepath, duration, loop=0):
 		"""Create GIF image file with images.
-		
+
 		:param filepath: Output GIF image file path.
 		:param duration: Duration of each image frame.
 		:param loop: Loop times.

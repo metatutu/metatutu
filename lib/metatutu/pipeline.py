@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -23,11 +23,11 @@ __all__ = [
 
 class Worker(ABC, threading.Thread):
 	"""Base class of worker classes.
-	
+
 	Worker is a processor run in its own working thread to play the specific
 	role in a program in paraellel with other workers or program (main thread).
-	
-	This base class defines the framework of worker classes, so that the 
+
+	This base class defines the framework of worker classes, so that the
 	worker management will be standardized and flexible for different scale of
 	pipeline.
 
@@ -45,27 +45,27 @@ class Worker(ABC, threading.Thread):
 		to check whether program had sent notice of dismiss, and make sure\
 		the exit of ``_process()`` as soon as possible to complete the dismiss\
 		workflow.
-	
+
 	* ``_pre_working()``: Framework will call it right before the working\
 		thread is started.  It's running in main thread.
-	
+
 	* ``_start_working()``: Framework will call it right after the working\
 		thread is started.  It's running in working thread.
-	
+
 	* ``_stop_working()``: Framework will call it right before the working\
 		thread is stopped.  It's running in working thread.
-	
+
 	* ``_post_working()``: Framework will call it right after the working thread\
 		is stopped.  It's running in main thread.
-	
+
 	* ``_enter_idle()``: Framework or some process will call it when the worker\
 		become idle(no task available) in task driven model.  It's running in\
 		working thread.
-	
+
 	* ``_leave_idle()``: Framework or some process will call it when the worker\
 		become busy(has task available) in task driven model.  It's running in\
 		working thread.
-	
+
 	* ``bind()``: Framework will call it to bind the data passed to the framework.
 	"""
 	def __init__(self):
@@ -92,7 +92,7 @@ class Worker(ABC, threading.Thread):
 			raise Exception("dismiss() must be called explicitly!")
 		else:
 			pass
-	
+
 	@abstractmethod
 	def _process(self): pass
 
@@ -135,7 +135,7 @@ class Worker(ABC, threading.Thread):
 			self.start()
 		except:
 			return False
-		
+
 		#
 		return True
 
@@ -204,7 +204,7 @@ class Workers:
 
 	def get_status(self):
 		"""Get status of workers.
-		
+
 		:returns: Returns a dict with summary of workers status.
 		"""
 		with self.__listLock:
@@ -219,7 +219,7 @@ class Workers:
 		if count > 0: idle_rate = idle_count / count
 		return {
 			"total_count": total_count,		# number of workers had ever been hired
-			"peak_count": peak_count,		# number of current workers at peak time 
+			"peak_count": peak_count,		# number of current workers at peak time
 			"count": count,					# number of current workers
 			"idle_count": idle_count,		# number of idle workers
 			"idle_rate": idle_rate			# idle% = idle_count/count, 0 if no worker is available
@@ -243,7 +243,7 @@ class Workers:
 		with self.__listLock:
 			self.__list.append(worker)
 			self.__total_count += 1
-			if len(self.__list) > self.__peak_count: 
+			if len(self.__list) > self.__peak_count:
 				self.__peak_count = len(self.__list)
 
 		#
@@ -255,7 +255,7 @@ class Workers:
 		:param workerClass: Worker class.
 		:param n: Number of workers to be hired.
 		:param data: Data to be passed to ``worker.bind()``.
-		:param ids: List of IDs of the new workers.  
+		:param ids: List of IDs of the new workers.
 			If it's None or not enough IDs in the list, id will be generated.
 
 		:returns: Number of workers had been hired.
@@ -273,7 +273,7 @@ class Workers:
 	def dismiss(self, id=None):
 		"""Dismiss a worker.
 
-		:param id: ID of the worker to be dismissed.  
+		:param id: ID of the worker to be dismissed.
 			If it's None, it will dismiss the last idle worker hired or\
 			last worker hired.
 
@@ -297,7 +297,7 @@ class Workers:
 						index = count - i - 1
 						break
 			worker = self.__list.pop(index)
-		
+
 		# dismiss the worker
 		worker.dismiss()
 		del worker
@@ -336,7 +336,7 @@ class Workers:
 
 				#
 				count += 1
-		
+
 		#
 		return count
 
@@ -345,7 +345,7 @@ class _TaskQueueItem(object):
 		self.index = index
 		self.priority = priority
 		self.task = task
-	
+
 	def __lt__(self, other):
 		if self.priority < other.priority:
 			return True
@@ -367,7 +367,7 @@ class TaskQueue(queue.PriorityQueue):
 
 	def get_status(self):
 		"""Get status of the queue.
-		
+
 		:returns: Returns a dict with summary of queue status.
 		"""
 		with self.mutex:
@@ -377,7 +377,7 @@ class TaskQueue(queue.PriorityQueue):
 		return {
 			"total_count": total_count,		# number of tasks had ever been queued
 			"peak_count": peak_count,		# number of tasks at peak time
-			"count": count					# number of current tasks 
+			"count": count					# number of current tasks
 		}
 
 	def push_task(self, task, priority=100, timeout=None):
@@ -396,7 +396,7 @@ class TaskQueue(queue.PriorityQueue):
 			# get index
 			with self.mutex:
 				index = self.__total_count + 1
-			
+
 			# put
 			self.put(_TaskQueueItem(index, priority, task), block=True, timeout=timeout)
 
@@ -431,7 +431,7 @@ class Doer(Worker):
 	"""Base class of doer classes.
 
 	Doer is the worker who is task drivern and typically working independently.
-	It is with it's own task queue and be reponsible to finish all tasks 
+	It is with it's own task queue and be reponsible to finish all tasks
 	in the queue before it's dismissed.
 
 	Program pushes the tasks in the queue and just wait them processed by the doer.
@@ -444,7 +444,7 @@ class Doer(Worker):
 	"""
 	def __init__(self, maxsize=0):
 		Worker.__init__(self)
-		
+
 		# task queue
 		self.task_queue = TaskQueue(maxsize)
 
@@ -489,7 +489,7 @@ class Operator(Worker):
 	Override below methods to implement the logic for specific Operator:
 
 	* ``_pop_task()``: Called by framework when need to get a task from some task queue.
-		
+
 	* ``_process_task()``: Called by framework when need to process a task.
 	"""
 	def __init__(self):
@@ -521,7 +521,7 @@ class Controller(Worker):
 	"""Base class of controller classes.
 
 	Controller is the worker who is not task driven.
-	It's typically working in parallel with other Operators to monitor and 
+	It's typically working in parallel with other Operators to monitor and
 	facilitate the pipeline.  Or it may take some special processes no matter
 	it's once or repeating.
 	"""
@@ -539,7 +539,7 @@ class Team(ABC):
 
 	* ``task_queue``: A shared task queue.  Program could send the tasks to it,\
 		and team is responsible to process the task in quality and timing.
-	
+
 	* ``operators``: A list of operators who is processing the tasks.  The list\
 		could be dynamic based on the workload by controllers.
 
@@ -581,17 +581,17 @@ class Team(ABC):
 				if self.hire_operator(1) < 1:
 					raise Exception("Failed to hire operator to finish remaining tasks!")
 			time.sleep(0.5)
-	
+
 	def hire_operator(self, count=1):
 		if self.operator_class is None: return 0
 		return self.operators.hire_n(self.operator_class, count, self, None)
-	
+
 	def dismiss_operator(self, count=1):
 		return self.operators.dismiss_n(count)
 
 class Pipeline(ABC):
 	"""Base class of pipeline classes.
-	
+
 	Pipeline is an organization with Teams and Controllers to process complex
 	tasks and jobs.  Pipeline is typically with:
 
@@ -609,7 +609,7 @@ class Pipeline(ABC):
 	* (controllers): Roles to facilitate the pipeline process.
 
 	This class is not defining any workflow, and it's more link a model for
-	developer to build the pipeline.  Override and implement below methods 
+	developer to build the pipeline.  Override and implement below methods
 	are suggested:
 
 	* ``__init__()``: Define pipeline attributes.

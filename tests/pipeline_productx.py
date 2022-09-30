@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -61,7 +61,7 @@ class Dispatcher(Controller):
 
 					# log
 					print("dispatcher: dispatched {0}".format(job.id))
-	
+
 			# check stop request
 			if self._dismissNotice.is_set(): break
 
@@ -76,7 +76,7 @@ class PartAOperator(Operator):
 
 	def _process_task(self, task):
 		job = task["job"]
-		
+
 		# build part A
 		job.part_a = "part A for " + job.id
 
@@ -101,7 +101,7 @@ class PartATeam(Team):
 	def __init__(self):
 		Team.__init__(self)
 		self.operator_class = PartAOperator
-	
+
 	def __del__(self):
 		Team.__del__(self)
 
@@ -111,7 +111,7 @@ class PartATeam(Team):
 
 		# hire operators
 		self.hire_operator(5)
-	
+
 	def dismiss(self):
 		# finish all tasks
 		self.finish_all_tasks()
@@ -152,7 +152,7 @@ class PartBTeam(Team):
 	def __init__(self):
 		Team.__init__(self)
 		self.operator_class = PartBOperator
-	
+
 	def __del__(self):
 		Team.__del__(self)
 
@@ -162,7 +162,7 @@ class PartBTeam(Team):
 
 		# hire operators
 		self.hire_operator(5)
-	
+
 	def dismiss(self):
 		# finish all tasks
 		self.finish_all_tasks()
@@ -180,7 +180,7 @@ class Collector(Controller):
 			# dispatch tasks of packing for jobs with part A and part B built
 			for job in self.pipeline.job_queue:
 				if job.state == ProductXPipelineJob.s1_building:
-					if (job.part_a is not None) and (job.part_b is not None): 
+					if (job.part_a is not None) and (job.part_b is not None):
 						# update job state
 						job.state = ProductXPipelineJob.s2_packing
 
@@ -235,7 +235,7 @@ class PackTeam(Team):
 	def __init__(self):
 		Team.__init__(self)
 		self.operator_class = PackOperator
-	
+
 	def __del__(self):
 		Team.__del__(self)
 
@@ -245,7 +245,7 @@ class PackTeam(Team):
 
 		# hire operators
 		self.hire_operator(5)
-	
+
 	def dismiss(self):
 		# finish all tasks
 		self.finish_all_tasks()
@@ -340,7 +340,7 @@ if __name__ == "__main__":
 	# wait
 	pipeline.finish_all_jobs()
 	clocker.record("wait")
-	
+
 	# dismiss
 	pipeline.dismiss()
 	clocker.record("dismiss")

@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -26,7 +26,7 @@ class CLIApp(LoggerHelper):
 
     def init_app(self):
         """Initialize the application.
-        
+
         This will be called by framework at application starts.
         It could be used to initialize the application environment.
 
@@ -36,19 +36,19 @@ class CLIApp(LoggerHelper):
 
     def determine_workflow(self):
         """Determine the workflow to run.
-        
+
         This will be called by framework after initialization.
         Applicaiton could either use command line or menu to determine
         the workflow to run.
 
-        :returns: Returns the workflow name (str) to run.  
+        :returns: Returns the workflow name (str) to run.
             Returns None to exit program.
         """
         return "default"
 
     def _globals(self):
         """Global namespace for workflow handler searching.
-        
+
         When dispatching workflow, if the handler is not found within
         the members, it could alternatively search in a global namespace,
         so that the workflow handler could be as a regular function.
@@ -61,9 +61,9 @@ class CLIApp(LoggerHelper):
 
     def run_workflow(self, workflow_name):
         """Run the workflow.
-        
+
         Framework will call this to run the specific workflow.
-        
+
         :param workflow_name: Workflow name.
         :returns: Returns program exit code gotten from the workflow.
             It returns None on unexpected error.
@@ -96,7 +96,7 @@ class CLIApp(LoggerHelper):
 
     def workflow_default(self):
         """Handler of default workflow.
-        
+
         "default" is the workflow name of this framework.
         So for an application with single workflow, simple implement this function
         could make it happens.
@@ -107,17 +107,17 @@ class CLIApp(LoggerHelper):
 
     def on_workflow_not_dispatched(self, workflow_name):
         """Handler for case that workflow is not dispatched.
-        
+
         This will be called by framework when workflow could not be dispatched.
 
         :param workflow_name: Workflow name.
-        :returns: Returns the exit code of the program.      
+        :returns: Returns the exit code of the program.
         """
         return -1
 
     def cleanup_app(self):
         """Clean up the application.
-        
+
         This will be called by framework before exiting program.
         """
         #cleanup loggers
@@ -202,20 +202,20 @@ class CLIApp(LoggerHelper):
             r["__argn__"] = len(sys.argv)
             r["__argv0__"] = sys.argv[0]
             if len(sys.argv) <= 1: return r
-            
+
             #get commands
             command_count = len(parts_commands)
             if len(sys.argv) < 1 + command_count: return None
             for i in range(0, command_count):
                 r[parts_commands[i]] = sys.argv[1 + i]
-            
+
             #get options
             opts, args = getopt.getopt(sys.argv[1 + command_count:], shortopts, longopts)
             for opt_name, opt_value in opts:
                 for name, formats in parts_options:
                     if opt_name in formats:
                         r[name] = opt_value
-            
+
             #get args
             r["__args__"] = args
 

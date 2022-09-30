@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -34,7 +34,7 @@ class Figure:
 	.. hint::
 		Override ``_get_chart_rect()`` could define the customized layout
 		not necessarys to be in cells with rows and columns.
-	
+
 	:ivar figsize: Size of the figure in inches.
 		It specifies the size in a tuple as (width, height).
 	:ivar layout: Layout of the figure.
@@ -90,7 +90,7 @@ class Figure:
 
 	def add_chart(self, title=None, pos=None, padding=(0.125, 0.12, 0.10, 0.11)):
 		"""Add a chart.
-		
+
 		It's basically to define an axes system for drawing on the figure (canvas).
 
 		:param title: Chart title.  If it's given, chart title will be created.
@@ -113,9 +113,9 @@ class Figure:
 		w = r - l
 		h = b - t
 		ax = self._f.add_axes([
-			l + w * padding[0], 
-			1 - (b - h * padding[3]), 
-			w * (1.0 - padding[0] - padding[2]), 
+			l + w * padding[0],
+			1 - (b - h * padding[3]),
+			w * (1.0 - padding[0] - padding[2]),
 			h * (1.0 - padding[1] - padding[3])])
 		if title: plt.title(title)
 		return ax
@@ -138,7 +138,7 @@ class Figure:
 
 	def on_paint(self):
 		"""Event handler called when a figure is created and needs to be painted.
-		
+
 		:returns: Returns False to stop further workflow.
 		"""
 		pass

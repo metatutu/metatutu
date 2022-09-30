@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -16,21 +16,21 @@ __all__ = ["Display", "HTMLDisplay", "ProgressDisplay", "WorkflowWithProgressDis
 
 class Display:
 	"""Base class of Display classes.
-	
+
 	:ivar min_interval: Minimum interval between 2 refreshes.  In seconds.
 	"""
 
 	def __init__(self):
 		# config
 		self.min_interval = 0.5  # minimum interval between 2 refreshes
-        
+
 		# control
 		self._display_id = None
 		self._last_refresh_ts = time.time()
-    
+
 	def _refresh(self, content, force=False):
 		if (not force) and (self._display_id is not None):
-			if (time.time() - self._last_refresh_ts) < self.min_interval: 
+			if (time.time() - self._last_refresh_ts) < self.min_interval:
 				return
 		if self._display_id is None:
 			self._display_id = str(uuid.uuid4())
@@ -38,33 +38,33 @@ class Display:
 		else:
 			update_display(content, display_id=self._display_id)
 		self._last_refresh_ts = time.time()
-    
+
 	def _display(self, content, force=False):
 		self._refresh(content, force)
-            
+
 	def clear(self):
 		self._refresh(HTML(""))
 
 class HTMLDisplay(Display):
-	"""Display HTML data in Jupyter Notebooks.  
-	
+	"""Display HTML data in Jupyter Notebooks.
+
 	This is also the base class of all other Display classes to be displayed
 	with HTML content.
 	"""
 
 	def __init__(self):
 		Display.__init__(self)
-    
+
 	def _get_html(self):
 		return ""
-    
+
 	def _display_html(self, force=False):
 		self._display(HTML(self._get_html()), force)
 
 	@classmethod
 	def display(cls, html):
 		"""Display HTML content.
-		
+
 		:param html: HTML content.
 		"""
 		Display()._display(HTML(html), True)
@@ -72,12 +72,12 @@ class HTMLDisplay(Display):
 	@classmethod
 	def display_div(cls, html, width=None, height=None, style=None):
 		"""Display HTML content in a <div> block.
-		
+
 		:param html: HTML content.
 		:param width: Width of <div> block.  Optional.
 		:param height: Height of <div> block.  Optional.
 		:param style: Style of <div> block.  Optional.
-		
+
 		.. warning::
 			When ``style`` is given, ``width`` and ``height`` will be ignored.
 		"""
@@ -92,7 +92,7 @@ class HTMLDisplay(Display):
 				style_width = "width: {}".format(width)
 			elif type(width) == int:
 				style_width = "width: {}px".format(width)
-            
+
 			style_height = ""
 			if height is None:
 				pass
@@ -103,9 +103,9 @@ class HTMLDisplay(Display):
 
 			if style_width != "" or style_height != "":
 				div_style = "style='{}; {}'".format(style_width, style_height)
-        
-		cls.display("<div {}>{}</div>".format(div_style, html)) 
-        
+
+		cls.display("<div {}>{}</div>".format(div_style, html))
+
 	@classmethod
 	def display_head(cls, text, level=5):
 		"""Display content in <h> tags.
@@ -120,9 +120,9 @@ class HTMLDisplay(Display):
 	@classmethod
 	def display_dataframe(cls, df, rows=None, width="100%", height=200, style=None):
 		"""Display DataFrame object (pandas) in HTML format.
-		
+
 		:param df: DataFrame object.
-		:param rows: Rows to be displayed.  
+		:param rows: Rows to be displayed.
 			If it is None, then display all rows.
 			If it is a positive number, then display number of head rows.
 			If it is a negative number, then display number of tail rows.
@@ -142,10 +142,10 @@ class HTMLDisplay(Display):
 		else:
 			html_df = df.style.set_sticky(1).to_html()
 		cls.display_div(html_df, width, height, style)
-        
+
 class ProgressDisplay(HTMLDisplay):
 	"""Progress display.
-	
+
 	:ivar show_text: Whether to show progress text.
 	:ivar text_prefix: Text prefix.
 	:ivar show_progress_bar: Whether to show progress bar.
@@ -188,7 +188,7 @@ class ProgressDisplay(HTMLDisplay):
 		self._finished = False
 		self._start_ts = time.time()
 		self._end_ts = time.time()
-    
+
 	def _get_html(self):
 		html = "<div>"
 		if self.show_progress_bar:
@@ -201,7 +201,7 @@ class ProgressDisplay(HTMLDisplay):
 			html += "<p>{}</p>".format(self.get_text(self._finished))
 		html += "</div>"
 		return html
-    
+
 	def get_text(self, finished):
 		"""Create progress text.
 
@@ -210,21 +210,21 @@ class ProgressDisplay(HTMLDisplay):
 		"""
 		if self._total > 0:
 			return "{} {} of {}/{:.1f}% (elapsed: {:.1f} seconds)".format(
-				self.text_prefix, 
-				self._progress, self._total, 
-				self._progress / self._total * 100.0, 
+				self.text_prefix,
+				self._progress, self._total,
+				self._progress / self._total * 100.0,
 				self.elapsed())
 		else:
 			return "{} {} (elapsed: {:.1f} seconds)".format(
 				self.text_prefix, self._progress, self.elapsed())
-        
+
 	def elapsed(self):
 		"""Get time elapsed for the workflow.
-		
+
 		:returns: Time eplased since ``on_init()`` invoked.  In seconds.
 		"""
 		return self._end_ts - self._start_ts
-    
+
 	def on_init(self, total):
 		"""Initialize progress.
 
@@ -237,7 +237,7 @@ class ProgressDisplay(HTMLDisplay):
 		self._finished = False
 		self._start_ts = time.time()
 		self._display_html(True)
-        
+
 	def on_update(self, progress):
 		"""Update progress.
 
@@ -248,7 +248,7 @@ class ProgressDisplay(HTMLDisplay):
 		self._end_ts = time.time()
 		self._progress = progress
 		self._display_html(False)
-		
+
 	def on_finish(self, total=None):
 		"""Finish progress.
 
@@ -273,13 +273,13 @@ class WorkflowWithProgressDisplay:
 
 	def __init__(self, progress_display=None):
 		self._p = progress_display
-		
+
 	def on_init(self, progress, total):
 		if self._p: self._p.on_init(total)
-		
+
 	def on_update(self, progress, total):
 		if self._p: self._p.on_update(progress)
-		
+
 	def on_finish(self, progress, total):
 		if self._p: self._p.on_finish(total)
 

@@ -1,3 +1,12 @@
+"""
+    This is part of METATUTU library.
+    https://pypi.org/project/metatutu/
+
+	:author: max.wu@wooloostudio.com
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
+	:license: see LICENSE.
+"""
+
 import os
 import re
 import shutil
@@ -7,10 +16,10 @@ root_path = os.path.abspath(".")
 class task:
 	def __init__(self, name):
 		self.name = name
-	
+
 	def __enter__(self):
 		print(">>>>>>>> Begin {} >>>>>>>>".format(self.name))
-	
+
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		print("<<<<<<<< End {} <<<<<<<<".format(self.name))
 

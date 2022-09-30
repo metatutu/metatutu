@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -15,8 +15,8 @@ from abc import ABC, abstractmethod
 import metatutu.pipeline
 
 __all__ = [
-	"MessageLevel", 
-	"Logger", 
+	"MessageLevel",
+	"Logger",
 	"TextLogger",
 	"ConsoleLogger",
 	"TextFileLogger", "FileLogger", "DatedFileLogger",
@@ -35,7 +35,7 @@ class MessageLevel:
 
 class Logger(ABC):
 	"""Base class of logger classes.
-	
+
 	It's an abstract class, implementation of specific logger needs to override
 	`_log()` to handle the logging message output in certain format to certain
 	output device.
@@ -61,7 +61,7 @@ class Logger(ABC):
 	.. warning::
 		When the logger is running under async mode, make sure `close()` will be
 		called explicitly, otherwise, the main program could be dead locked due
-		the threading handling mechanism in Python.  
+		the threading handling mechanism in Python.
 	"""
 	def __init__(self):
 		# config
@@ -77,7 +77,7 @@ class Logger(ABC):
 	def __del__(self):
 		if self.__async_logger:
 			raise Exception("close() must be called explicitly for async mode.")
-	
+
 	class __AsyncLogger(metatutu.pipeline.Doer):
 		def __init__(self, maxsize, logger):
 			super().__init__(maxsize)
@@ -86,20 +86,20 @@ class Logger(ABC):
 		def _process_task(self, task):
 			with self.logger._log_lock:
 				self.logger._log(task[0], task[1], task[2], task[3])
-	
+
 	def open(self):
 		"""Open the logger.
-		
+
 		No need to call it explicitly.  Framework will call it automatically.
 		"""
 		if self.async_mode:
 			if self.__async_logger is None:
 				self.__async_logger = self.__AsyncLogger(self.async_queuesize, self)
 				self.__async_logger.hire()
-	
+
 	def close(self):
 		"""Close the logger.
-		
+
 		It's required to call it explicitly for async mode.
 		"""
 		if self.__async_logger:
@@ -152,7 +152,7 @@ class Logger(ABC):
 
 class TextLogger(Logger):
 	"""Base class of text logger classes.
-	
+
 	This is the base class and defines the common behaviors of the loggers
 	with text based output.
 
@@ -225,7 +225,7 @@ class TextLogger(Logger):
 				output_text = ts_text + indent_text * depth + message_lines[i]
 			else:
 				output_text += "\n" + " " * len(ts_text) + indent_text * depth + message_lines[i]
-		
+
 		#
 		return output_text
 
@@ -240,14 +240,14 @@ class ConsoleLogger(TextLogger):
 
 class TextFileLogger(TextLogger):
 	"""Base class of logger classes for text file (log file).
-	
+
 	:ivar encoding: Encoding of text file.
 	:ivar mode: Open mode of the text file.
 	:ivar auto_flush: Whether to flush on each log activity.
 	"""
 	def __init__(self):
 		TextLogger.__init__(self)
-		
+
 		# config
 		self.encoding = "utf-8"
 		self.mode = "a"
@@ -301,7 +301,7 @@ class DatedFileLogger(TextFileLogger):
 	"""Logger for dated log files."""
 	def __init__(self, folderpath):
 		TextFileLogger.__init__(self)
-		
+
 		# control
 		self._files = [None]
 		self._folderpath = folderpath
@@ -322,7 +322,7 @@ class DatedFileLogger(TextFileLogger):
 			self._files[0].close()
 			self._files[0] = None
 			self._current_filepath = ""
-		
+
 		# open file
 		f = None
 		try:

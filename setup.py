@@ -1,3 +1,12 @@
+"""
+    This is part of METATUTU library.
+    https://pypi.org/project/metatutu/
+
+	:author: max.wu@wooloostudio.com
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
+	:license: see LICENSE.
+"""
+
 import os
 from setuptools import setup, find_packages
 
@@ -33,7 +42,7 @@ setup(
     package_dir={"": "lib"},
     packages=find_packages("lib"),
     include_package_data=True,
-    
+
     # requirements
     platforms="any",
     python_requires="",
