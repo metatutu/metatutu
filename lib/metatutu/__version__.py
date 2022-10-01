@@ -9,7 +9,7 @@
 
 __NAME__ = "metatutu"
 __DESC__ = "metatutu library"
-__VERSION__ = "0.0.4"
+__VERSION__ = "0.0.5"
 __LICENSE__= "MIT License"
 __AUTHOR__ = "Wooloo Studio"
 __AUTHOR_EMAIL__ = "max.wu@wooloostudio.com"
@@ -21,4 +21,4 @@ __PROJECT_URLS__ = {
 	"Forum": "https://github.com/metatutu/metatutu/issues",
 	"Donate": "https://github.com/metatutu/metatutu"
 }
-__BUILD__ = 67
+__BUILD__ = 68

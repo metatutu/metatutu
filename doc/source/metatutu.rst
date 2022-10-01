@@ -48,6 +48,14 @@ metatutu.logging module
    :undoc-members:
    :show-inheritance:
 
+metatutu.osys module
+--------------------
+
+.. automodule:: metatutu.osys
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 metatutu.pipeline module
 ------------------------
 
