@@ -3,7 +3,7 @@
     https://pypi.org/project/metatutu/
 
 	:author: max.wu@wooloostudio.com
-	:copyright: Copyright 2022 Wooloo Studio.  All rights reserved.
+	:copyright: Copyright (C) 2022 Wooloo Studio.  All rights reserved.
 	:license: see LICENSE.
 """
 
@@ -15,7 +15,7 @@ class Clocker:
 	def __init__(self):
 		self.checkpoints = []
 		self.reset()
-	
+
 	def reset(self):
 		"""Reset."""
 		self.checkpoints.clear()
@@ -53,7 +53,7 @@ class Clocker:
 
 	def results_text(self):
 		"""Get summary of timing results in text.
-		
+
 		:returns: Text of summary of timing results for display.
 		"""
 		results = self.results()
@@ -73,7 +73,7 @@ class Clocker:
 
 		:param label: Checkpoint label of the phase to be queried.
 			If it's None, return the duration of the last phase.
-		
+
 		:returns: The duration of the phase in seconds.
 			Returns None when the checkpoint is not found.
 		"""
