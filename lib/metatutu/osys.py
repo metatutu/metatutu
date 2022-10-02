@@ -8,9 +8,9 @@
 """
 
 import os
-import psutil
 import re
-from metatutu.debugging import Clocker
+import psutil
+import subprocess
 
 class OSUtils:
     """Operating system utilities."""
@@ -54,15 +54,25 @@ class OSUtils:
             return None
 
     @classmethod
-    def process(cls, p=None, cmdline=None):
+    def process(cls, pid=None, p=None, cmdline=None):
         """Get a snapshot of process information.
 
-        :param p: Process object.  If it's None, it means current process.
+        :param pid: Process id.  If both `pid` and `p` are None, it means current process.
+            If pid is given, `p` will be ignored.
+        :param p: Process object.  This will be used only when `pid` is None.
         :param cmdline: Command line data to be filled.  If it's None, it will be generated.
         :returns: Returns a dict with process information or None on failure.
         """
         try:
-            if p is None: p = cls.Process()
+            if pid:
+                p = cls.Process(pid)
+                if p is None: return None
+            else:
+                if p:
+                    pass
+                else:
+                    p = cls.Process()
+                    if p is None: return None
             return {
                 "pid": p.pid,
                 "name": p.name(),
@@ -90,10 +100,32 @@ class OSUtils:
                 p = psutil.Process(pid)
                 cmdline = cls.make_cmdline(p.cmdline())
                 if not re.fullmatch(pattern, cmdline.lower()): continue
-                process = cls.process(p, cmdline)
+                process = cls.process(p=p, cmdline=cmdline)
                 if process: processes.append(process)
             except:
                 pass
+        return processes
+
+    @classmethod
+    def list_subprocesses(cls, pid=None, pattern=".*"):
+        """Get a snapshot of all subprocesses meeting search criteria.
+
+        :param pid: Process id.  If it's None, it means current process.
+        :param pattern: Pattern of command line for searching, in RegEx and lower cases.
+        :returns: Returns a list of processes found, or None on failure.
+            List is as [{process}].
+        """
+        processes = []
+        try:
+            pp = cls.Process(pid)
+            if pp is None: return None
+            for p in pp.children():
+                cmdline = cls.make_cmdline(p.cmdline())
+                if not re.fullmatch(pattern, cmdline.lower()): continue
+                process = cls.process(p=p, cmdline=cmdline)
+                if process: processes.append(process)
+        except:
+            pass
         return processes
 
     @classmethod
@@ -115,9 +147,9 @@ class OSUtils:
                 for pof in pofs:
                     file_path = pof.path
                     if file_path in open_files.keys():
-                        open_files[file_path].append(cls.process(p, cmdline))
+                        open_files[file_path].append(cls.process(p=p, cmdline=cmdline))
                     else:
-                        open_files[file_path] = [cls.process(p, cmdline)]
+                        open_files[file_path] = [cls.process(p=p, cmdline=cmdline)]
             except:
                 pass
         return open_files
@@ -138,3 +170,109 @@ class OSUtils:
             if not fpath.lower() == fpath_target: continue
             processes += p_list
         return processes
+
+    @classmethod
+    def create_subprocess(cls, cmdline, wait=False, mode="null", **kwargs):
+        """Create a process.
+
+        This is a super implementation based on `class subprocess.Popen`
+        to create the process with predefined modes, so that it will be
+        easier for application developers.
+
+        Below modes are available:
+
+        * "null": Subprocess, no output.
+
+        * "new": Subprocess, output to the new console.  (Windows only)
+
+        * "current": Subprocess, output to the current console.
+
+        :param cmdline: Full command line.
+        :param wait: If it's True, it will wait for subprocess terminated.
+            Otherwise, it will returns immediately after subprocess created.
+        :param mode: Mode.  If it's None, it will bypass the special settings.
+        :returns: Returns a `class subprocess.Popen` object on success,
+            or None on failure.
+        """
+        try:
+            #get settings
+            stdout = kwargs.pop("stdout", None)
+            creationflags = kwargs.pop("creationflags", 0)
+
+            #apply special settings based on mode
+            if mode:
+                if mode == "null":
+                    stdout = subprocess.DEVNULL
+                elif mode == "new":
+                    stdout = None
+                    creationflags = subprocess.CREATE_NEW_CONSOLE
+                elif mode == "current":
+                    stdout = None
+                elif mode == "$null":
+                    stdout = None
+                    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+                elif mode == "$new":
+                    stdout = None
+                    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP + subprocess.CREATE_NEW_CONSOLE
+                else:
+                    return None
+
+            #create subprcess
+            p = subprocess.Popen(cmdline,
+                stdout=stdout,
+                creationflags=creationflags,
+                **kwargs)
+
+            #wait
+            if wait: p.wait()
+
+            #
+            return p
+        except:
+            return None
+
+    @classmethod
+    def run_command(cls, cmdline, **kwargs):
+        """Run a command with shell.
+
+        :returns: Returns return code of the command.  Returns None on failure.
+        """
+        kwargs.pop("shell", None)
+        kwargs.pop("wait", None)
+        mode = kwargs.pop("mode", None)
+        if mode == "new":
+            #mode "new" is working for Windows only
+            p = cls.create_subprocess("cmd /c " + cmdline, wait=True, shell=False, mode=mode, **kwargs)
+        else:
+            p = cls.create_subprocess(cmdline, wait=True, shell=True, mode=mode, **kwargs)
+        if p is None: return None
+        return p.returncode
+
+    @classmethod
+    def run_app(cls, cmdline, **kwargs):
+        """Run an application without shell.
+
+        :returns: Returns return code of the command.  Returns None on failure.
+        """
+        kwargs.pop("shell", None)
+        kwargs.pop("wait", None)
+        p = cls.create_subprocess(cmdline, wait=True, shell=False, **kwargs)
+        if p is None: return None
+        return p.returncode
+
+    @classmethod
+    def start_app(cls, cmdline, **kwargs):
+        """Start an application without shell."""
+        kwargs.pop("shell", None)
+        kwargs.pop("wait", None)
+        return cls.create_subprocess(cmdline, wait=False, shell=False, **kwargs)
+
+    @classmethod
+    def kill_subprocesses(cls):
+        """Kill all subprocesses."""
+        try:
+            pp = cls.Process()
+            if pp is None: return
+            for p in pp.children(): p.kill()
+        except:
+            pass
