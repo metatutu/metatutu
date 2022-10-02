@@ -95,7 +95,7 @@ class Servicelet(CLIApp):
         try:
             #service info
             si = self.service_info
-            if si.get("name") is None: return -1
+            if si.get("name") is None: return 1
             self.log("Service Name: {}".format(si.get("name")))
 
             if si.get("version"): self.log("Version: {}".format(si.get("version")))
@@ -141,4 +141,4 @@ class Servicelet(CLIApp):
             return 0
         except Exception as ex:
             self.exception(ex)
-            return -1
+            return 1

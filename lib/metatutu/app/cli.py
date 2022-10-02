@@ -92,7 +92,7 @@ class CLIApp(LoggerHelper):
             if f is None: return self.on_workflow_not_dispatched(workflow_name)
             return f()
         except:
-            return -1
+            return 1
 
     def workflow_default(self):
         """Handler of default workflow.
@@ -113,7 +113,7 @@ class CLIApp(LoggerHelper):
         :param workflow_name: Workflow name.
         :returns: Returns the exit code of the program.
         """
-        return -1
+        return 1
 
     def cleanup_app(self):
         """Clean up the application.
@@ -125,7 +125,7 @@ class CLIApp(LoggerHelper):
 
     def main(self):
         """Application framework."""
-        exit_code = -1
+        exit_code = 1
         try:
             #initialize application
             if not self.init_app(): raise Exception()
