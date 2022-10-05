@@ -11,6 +11,35 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 import imageio
 
+class ImageUtils:
+	"""Image utilities."""
+
+	@classmethod
+	def OpenImage(cls, filepath):
+		"""Open and load the image.
+
+		`PIL.Image.open` is a lazy load implementation, and it will not close
+		the file until it's load.  Although it should be working with simply
+		calling `Image.load()` right after `open(file_path)`, but according to
+		the source code of PIL, the file will be still open if any error
+		will be raised.  So to make sure the file is closed, this function is
+		fully handling the file.
+
+		According to the PIL documentation, this function may not work for
+		image files with multiple frames.
+
+		:param filepath: Image file path.
+		:returns: Returns a `PIL.Image` object on success or None on failure.
+		"""
+		try:
+			image = None
+			with open(filepath, "rb") as fp:
+				image = Image.open(fp)
+				image.load()
+			return image
+		except:
+			return None
+
 class Images:
 	"""Image list.
 
