@@ -17,13 +17,12 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
 from metatutu.logging import LoggerHelper, MessageLevel
-from metatutu.fsds import FileSystemUtils, FileSystemDataStore
+from metatutu.fsds import FileSystemUtils, FileSystemDataStore, TempFile
+from metatutu.images import ImageUtils
 
 __all__ = [
     "Cache", "FileSystemCache",
     "Session", "HttpSession", "WebDriverSession",
-    "SessionHelper",
-    "Parser"
 ]
 
 class Cache(ABC):
@@ -574,22 +573,31 @@ class WebDriverSession(Session):
 
         :returns: Returns the sizes of current status, or None on failure.
         """
-        return self.execute("""
-            return {
-                "screen.width": window.screen.width,
-                "screen.height": window.screen.height,
-                "screen.client.width": window.screen.availWidth,
-                "screen.client.height": window.screen.availHeight,
-                "window.width": window.outerWidth,
-                "window.height": window.outerHeight,
-                "window.client.width": window.innerWidth,
-                "window.client.height": window.innerHeight,
-                "page.width": document.documentElement.scrollWidth,
-                "page.height": document.documentElement.scrollHeight,
-                "page.client.width": document.documentElement.clientWidth,
-                "page.client.height": document.documentElement.clientHeight
-            }
-        """)
+        try:
+            sizes = self.execute("""
+                return {
+                    "screen.width": window.screen.width,
+                    "screen.height": window.screen.height,
+                    "screen.client.width": window.screen.availWidth,
+                    "screen.client.height": window.screen.availHeight,
+                    "window.width": window.outerWidth,
+                    "window.height": window.outerHeight,
+                    "window.client.width": window.innerWidth,
+                    "window.client.height": window.innerHeight,
+                    "page.width": document.documentElement.scrollWidth,
+                    "page.height": document.documentElement.scrollHeight,
+                    "page.client.width": document.documentElement.clientWidth,
+                    "page.client.height": document.documentElement.clientHeight
+                }
+            """)
+            if sizes is None: return None
+            sizes["window.border.width"] = sizes["window.width"] - sizes["window.client.width"]
+            sizes["window.border.height"] = sizes["window.height"] - sizes["window.client.height"]
+            sizes["window.scrollbar.width"] = sizes["window.client.width"] - sizes["page.client.width"]
+            sizes["window.scrollbar.height"] = sizes["window.client.height"] - sizes["page.client.height"]
+            return sizes
+        except:
+            return None
 
     def get_element_path(self, element):
         """Get element's full path.
@@ -612,6 +620,27 @@ class WebDriverSession(Session):
         :returns: Returns True on success or False on failure.
         """
         return self.handle.save_screenshot(filepath)
+
+    def get_screenshot_as_png(self):
+        """Get screenshot as PNG data."""
+        return self.handle.get_screenshot_as_png()
+
+    def get_screenshot_as_base64(self):
+        """Get screenshot as base64 data."""
+        return self.handle.get_screenshot_as_base64()
+
+    def get_screenshot_as_image(self):
+        """Get screenshot as Image object.
+
+        :returns: Returns Image object on success or None on failure.
+        """
+        try:
+            temp_file = TempFile()
+            if not self.save_screenshot(temp_file.path): return None
+            image = ImageUtils.OpenImage(temp_file.path)
+            return image
+        except:
+            return None
 
     def save_html(self, filepath):
         """Save current HTML as file.
