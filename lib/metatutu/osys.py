@@ -16,6 +16,16 @@ class OSUtils:
     """Operating system utilities."""
 
     @classmethod
+    @property
+    def is_windows(cls):
+        return os.name == "nt"
+
+    @classmethod
+    @property
+    def is_posix(cls):
+        return os.name == "posix"
+
+    @classmethod
     def make_cmdline(cls, arg_list):
         """Make a command line text with arguments of command line.
 
@@ -204,16 +214,19 @@ class OSUtils:
                 if mode == "null":
                     stdout = subprocess.DEVNULL
                 elif mode == "new":
-                    stdout = None
-                    creationflags = subprocess.CREATE_NEW_CONSOLE
+                    if cls.is_windows:
+                        stdout = None
+                        creationflags = subprocess.CREATE_NEW_CONSOLE
                 elif mode == "current":
                     stdout = None
                 elif mode == "$null":
-                    stdout = None
-                    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
+                    if cls.is_windows:
+                        stdout = None
+                        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
                 elif mode == "$new":
-                    stdout = None
-                    creationflags = subprocess.CREATE_NEW_PROCESS_GROUP + subprocess.CREATE_NEW_CONSOLE
+                    if cls.is_windows:
+                        stdout = None
+                        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP + subprocess.CREATE_NEW_CONSOLE
                 else:
                     return None
 
@@ -276,3 +289,26 @@ class OSUtils:
             for p in pp.children(): p.kill()
         except:
             pass
+
+    @classmethod
+    @property
+    def PATH(cls):
+        try:
+            return os.environ["PATH"].split(os.pathsep)
+        except:
+            return []
+
+    @classmethod
+    def where(cls, filename):
+        """Find file in current folder and folders in PATH.
+
+        :param filename: File name.
+        :returns: Returns a list of full path of found files in order."""
+        filepaths = []
+        filepath = os.path.join(os.getcwd(), filename)
+        if os.path.isfile(filepath): filepaths.append(filepath)
+        for path in cls.PATH:
+            filepath = os.path.join(path, filename)
+            if os.path.isfile(filepath):
+                if filepath not in filepaths: filepaths.append(filepath)
+        return filepaths
