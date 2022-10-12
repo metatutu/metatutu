@@ -8,6 +8,7 @@ Subpackages
    :maxdepth: 4
 
    metatutu.app
+   metatutu.apps3
    metatutu.da
    metatutu.dc
    metatutu.jupyter
