@@ -11,6 +11,86 @@ import os
 import re
 import psutil
 import subprocess
+from metatutu.fsds import FileSystemUtils, TempFile
+
+class Cmdline:
+    """Command line."""
+    def __init__(self, cmdline=None):
+        self._cmdline = None
+        self._args = None
+        if cmdline is None:
+            self._args = []
+        elif type(cmdline) is str:
+            self._cmdline = cmdline
+        elif type(cmdline) is list:
+            self._args = cmdline
+        elif type(cmdline) is Cmdline:
+            self._cmdline = cmdline._cmdline
+            self._args = cmdline._args
+
+    @property
+    def cmdline(self):
+        if self._cmdline:
+            return self._cmdline.strip()
+        else:
+            return self.args_to_cmdline(self._args, True).strip()
+
+    def __str__(self):
+        return self.cmdline
+
+    def is_valid(self):
+        return str(self) != ""
+
+    def reset(self, arg0=None):
+        self._cmdline = None
+        self._args = []
+        self.add(arg0)
+
+    def add(self, arg):
+        if arg: self._args.append(arg)
+
+    @classmethod
+    def args_to_cmdline(cls, args, auto_quoted=False):
+        """Make command line text from argument list.
+
+        This will make an argument list into a command line text (str) by
+        connecting all arguments together.  It optionally adds the quotes
+        automatically when `auto_quoted` is set to True to make the command
+        working especially for those file paths with space in middle.
+
+        For example, if the `args` is as below:
+        ["notepad", "C:\\Users\\Test\\My Documents\\test.txt"]
+
+        When `auto_quoted` is False, the created command line will be:
+        * notepad C:\\Users\\Test\\My Documents\\test.txt
+
+        When `auto_quoted` is True, the created command line will be:
+        * notepad "C:\\Users\\Test\\My Documents\\test.txt"
+
+        The rules to add quotes automatically are:
+        * There is space
+        * Not prefixed with "-" (eg. "-l 30", "--message=You got an error!")
+        * Not prefixed with quotes (eg. "'C:\\Program Files'", '"D:\\Test Data"')
+
+        :param args: List of arguments.
+        :param auto_quoted: Whether to add quotes automatically.
+        :returns: Command line text.
+        """
+        if auto_quoted:
+            cmdline = ""
+            for arg in args:
+                add_quotes = False
+                if arg.find(" ") >= 0:
+                    if arg[0] not in ('-', '"', "'"):
+                        add_quotes = True
+                if cmdline != "": cmdline += " "
+                if add_quotes:
+                    cmdline += '"' + arg + '"'
+                else:
+                    cmdline += arg
+        else:
+            cmdline = " ".join(args)
+        return cmdline
 
 class OSUtils:
     """Operating system utilities."""
@@ -24,26 +104,6 @@ class OSUtils:
     @property
     def is_posix(cls):
         return os.name == "posix"
-
-    @classmethod
-    def make_cmdline(cls, arg_list):
-        """Make a command line text with arguments of command line.
-
-        :param arg_list: List of command line arguments.
-        :returns: Command line text.
-        """
-        cmdline = ""
-        for arg in arg_list:
-            if arg.find(" ") >= 0:
-                if re.fullmatch('".*"', arg) or re.fullmatch("'.*'", arg):
-                    part = arg
-                else:
-                    part = '"' + arg + '"'
-            else:
-                part = arg
-            if cmdline != "": cmdline += " "
-            cmdline += part
-        return cmdline
 
     @classmethod
     @property
@@ -68,9 +128,9 @@ class OSUtils:
         """Get a snapshot of process information.
 
         :param pid: Process id.  If both `pid` and `p` are None, it means current process.
-            If pid is given, `p` will be ignored.
+            If `pid` is given, `p` will be ignored.
         :param p: Process object.  This will be used only when `pid` is None.
-        :param cmdline: Command line data to be filled.  If it's None, it will be generated.
+        :param cmdline: Command line text to be filled.  If it's None, it will be generated.
         :returns: Returns a dict with process information or None on failure.
         """
         try:
@@ -86,7 +146,7 @@ class OSUtils:
             return {
                 "pid": p.pid,
                 "name": p.name(),
-                "cmdline": cmdline if cmdline else cls.make_cmdline(p.cmdline()),
+                "cmdline": cmdline if cmdline else Cmdline.args_to_cmdline(p.cmdline(), False),
                 "create_time": p.create_time(),
                 "cwd": p.cwd(),
                 "username": p.username(),
@@ -108,7 +168,7 @@ class OSUtils:
         for pid in pids:
             try:
                 p = psutil.Process(pid)
-                cmdline = cls.make_cmdline(p.cmdline())
+                cmdline = Cmdline.args_to_cmdline(p.cmdline(), False)
                 if not re.fullmatch(pattern, cmdline.lower()): continue
                 process = cls.process(p=p, cmdline=cmdline)
                 if process: processes.append(process)
@@ -130,7 +190,7 @@ class OSUtils:
             pp = cls.Process(pid)
             if pp is None: return None
             for p in pp.children():
-                cmdline = cls.make_cmdline(p.cmdline())
+                cmdline = Cmdline.args_to_cmdline(p.cmdline(), False)
                 if not re.fullmatch(pattern, cmdline.lower()): continue
                 process = cls.process(p=p, cmdline=cmdline)
                 if process: processes.append(process)
@@ -151,7 +211,7 @@ class OSUtils:
         for pid in pids:
             try:
                 p = psutil.Process(pid)
-                cmdline = cls.make_cmdline(p.cmdline())
+                cmdline = Cmdline.args_to_cmdline(p.cmdline(), False)
                 if not re.fullmatch(pattern, cmdline.lower()): continue
                 pofs = p.open_files()
                 for pof in pofs:
@@ -182,7 +242,7 @@ class OSUtils:
         return processes
 
     @classmethod
-    def create_subprocess(cls, cmdline, wait=False, mode="null", **kwargs):
+    def create_subprocess(cls, cmdline, wait=False, mode="null", output=None, **kwargs):
         """Create a process.
 
         This is a super implementation based on `class subprocess.Popen`
@@ -197,13 +257,21 @@ class OSUtils:
 
         * "current": Subprocess, output to the current console.
 
-        :param cmdline: Full command line.
+        * "output": Subprocess, output to the `output['stdout']`.  This mode
+            doesn't work when `wait` is not True.
+
+        :param cmdline: Command line.  Could be str, list of arguments or
+            an instance of `Cmdline`.
         :param wait: If it's True, it will wait for subprocess terminated.
             Otherwise, it will returns immediately after subprocess created.
         :param mode: Mode.  If it's None, it will bypass the special settings.
+        :param output: Extra output values in dict.  If's None, ignore all
+            extra output.
         :returns: Returns a `class subprocess.Popen` object on success,
             or None on failure.
         """
+        tf_stdout = None
+        f_stdout = None
         try:
             #get settings
             stdout = kwargs.pop("stdout", None)
@@ -219,19 +287,20 @@ class OSUtils:
                         creationflags = subprocess.CREATE_NEW_CONSOLE
                 elif mode == "current":
                     stdout = None
-                elif mode == "$null":
-                    if cls.is_windows:
-                        stdout = None
-                        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP
-                elif mode == "$new":
-                    if cls.is_windows:
-                        stdout = None
-                        creationflags = subprocess.CREATE_NEW_PROCESS_GROUP + subprocess.CREATE_NEW_CONSOLE
+                elif mode == "output":
+                    if not wait: return None
+                    tf_stdout = TempFile()
                 else:
                     return None
 
+            #output to file
+            if tf_stdout:
+                f_stdout = open(tf_stdout.path, "w")
+                stdout = f_stdout
+
             #create subprcess
-            p = subprocess.Popen(cmdline,
+            p = subprocess.Popen(
+                Cmdline(cmdline).cmdline,
                 stdout=stdout,
                 creationflags=creationflags,
                 **kwargs)
@@ -239,42 +308,47 @@ class OSUtils:
             #wait
             if wait: p.wait()
 
+            #get output
+            if f_stdout:
+                f_stdout.close()
+                f_stdout = None
+                content = FileSystemUtils.load_file_contents(tf_stdout.path)
+                if content is None: content = ""
+                if output is not None: output["stdout"] = content
+
             #
             return p
         except:
             return None
+        finally:
+            if f_stdout: f_stdout.close()
+            if tf_stdout: tf_stdout.delete()
 
     @classmethod
-    def run_command(cls, cmdline, **kwargs):
-        """Run a command with shell.
+    def run(cls, cmdline, run_as_command=False, **kwargs):
+        """Run a command with shell or an application without shell.
 
+        :param cmdline: Command line.
+        :param run_as_command: Whether to run command line as command or application.
+            True to run it as command with shell, False to run it as application
+            without shell.
         :returns: Returns return code of the command.  Returns None on failure.
         """
         kwargs.pop("shell", None)
         kwargs.pop("wait", None)
         mode = kwargs.pop("mode", None)
-        if mode == "new":
-            #mode "new" is working for Windows only
-            p = cls.create_subprocess("cmd /c " + cmdline, wait=True, shell=False, mode=mode, **kwargs)
+        if run_as_command:
+            if mode == "new":  #for Windows only
+                p = cls.create_subprocess("cmd /c " + cmdline, wait=True, shell=False, mode=mode, **kwargs)
+            else:
+                p = cls.create_subprocess(cmdline, wait=True, shell=True, mode=mode, **kwargs)
         else:
-            p = cls.create_subprocess(cmdline, wait=True, shell=True, mode=mode, **kwargs)
+            p = cls.create_subprocess(cmdline, wait=True, shell=False, mode=mode, **kwargs)
         if p is None: return None
         return p.returncode
 
     @classmethod
-    def run_app(cls, cmdline, **kwargs):
-        """Run an application without shell.
-
-        :returns: Returns return code of the command.  Returns None on failure.
-        """
-        kwargs.pop("shell", None)
-        kwargs.pop("wait", None)
-        p = cls.create_subprocess(cmdline, wait=True, shell=False, **kwargs)
-        if p is None: return None
-        return p.returncode
-
-    @classmethod
-    def start_app(cls, cmdline, **kwargs):
+    def start(cls, cmdline, **kwargs):
         """Start an application without shell."""
         kwargs.pop("shell", None)
         kwargs.pop("wait", None)
@@ -299,15 +373,19 @@ class OSUtils:
             return []
 
     @classmethod
-    def where(cls, filename):
-        """Find file in current folder and folders in PATH.
+    def where(cls, filename, extra_paths=None):
+        """Find file in current folder, extra folders and folders in PATH.
 
         :param filename: File name.
+        :param extra_paths: A list of folder paths to be searched.  Or None to skip.
         :returns: Returns a list of full path of found files in order."""
         filepaths = []
         filepath = os.path.join(os.getcwd(), filename)
         if os.path.isfile(filepath): filepaths.append(filepath)
-        for path in cls.PATH:
+        search_paths = []
+        if extra_paths: search_paths += extra_paths
+        search_paths += cls.PATH
+        for path in search_paths:
             filepath = os.path.join(path, filename)
             if os.path.isfile(filepath):
                 if filepath not in filepaths: filepaths.append(filepath)
