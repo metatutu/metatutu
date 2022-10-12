@@ -33,7 +33,7 @@ class Cmdline:
         if self._cmdline:
             return self._cmdline.strip()
         else:
-            return self.args_to_cmdline(self._args).strip()
+            return self.args_to_cmdline(self._args, True).strip()
 
     def __str__(self):
         return self.cmdline
@@ -50,23 +50,46 @@ class Cmdline:
         if arg: self._args.append(arg)
 
     @classmethod
-    def args_to_cmdline(cls, args):
+    def args_to_cmdline(cls, args, auto_quoted=False):
         """Make command line text from argument list.
 
+        This will make an argument list into a command line text (str) by
+        connecting all arguments together.  It optionally adds the quotes
+        automatically when `auto_quoted` is set to True to make the command
+        working especially for those file paths with space in middle.
+
+        For example, if the `args` is as below:
+        ["notepad", "C:\\Users\\Test\\My Documents\\test.txt"]
+
+        When `auto_quoted` is False, the created command line will be:
+        * notepad C:\\Users\\Test\\My Documents\\test.txt
+
+        When `auto_quoted` is True, the created command line will be:
+        * notepad "C:\\Users\\Test\\My Documents\\test.txt"
+
+        The rules to add quotes automatically are:
+        * There is space
+        * Not prefixed with "-" (eg. "-l 30", "--message=You got an error!")
+        * Not prefixed with quotes (eg. "'C:\\Program Files'", '"D:\\Test Data"')
+
         :param args: List of arguments.
+        :param auto_quoted: Whether to add quotes automatically.
         :returns: Command line text.
         """
-        cmdline = ""
-        for arg in args:
-            if arg.find(" ") >= 0:
-                if arg.find('"') >= 0 or arg.find("'") >= 0:
-                    part = arg
+        if auto_quoted:
+            cmdline = ""
+            for arg in args:
+                add_quotes = False
+                if arg.find(" ") >= 0:
+                    if arg[0] not in ('-', '"', "'"):
+                        add_quotes = True
+                if cmdline != "": cmdline += " "
+                if add_quotes:
+                    cmdline += '"' + arg + '"'
                 else:
-                    part = '"' + arg + '"'
-            else:
-                part = arg
-            if cmdline != "": cmdline += " "
-            cmdline += part
+                    cmdline += arg
+        else:
+            cmdline = " ".join(args)
         return cmdline
 
 class OSUtils:
@@ -123,7 +146,7 @@ class OSUtils:
             return {
                 "pid": p.pid,
                 "name": p.name(),
-                "cmdline": cmdline if cmdline else Cmdline.args_to_cmdline(p.cmdline()),
+                "cmdline": cmdline if cmdline else Cmdline.args_to_cmdline(p.cmdline(), False),
                 "create_time": p.create_time(),
                 "cwd": p.cwd(),
                 "username": p.username(),
@@ -145,7 +168,7 @@ class OSUtils:
         for pid in pids:
             try:
                 p = psutil.Process(pid)
-                cmdline = Cmdline.args_to_cmdline(p.cmdline())
+                cmdline = Cmdline.args_to_cmdline(p.cmdline(), False)
                 if not re.fullmatch(pattern, cmdline.lower()): continue
                 process = cls.process(p=p, cmdline=cmdline)
                 if process: processes.append(process)
@@ -167,7 +190,7 @@ class OSUtils:
             pp = cls.Process(pid)
             if pp is None: return None
             for p in pp.children():
-                cmdline = Cmdline.args_to_cmdline(p.cmdline())
+                cmdline = Cmdline.args_to_cmdline(p.cmdline(), False)
                 if not re.fullmatch(pattern, cmdline.lower()): continue
                 process = cls.process(p=p, cmdline=cmdline)
                 if process: processes.append(process)
@@ -188,7 +211,7 @@ class OSUtils:
         for pid in pids:
             try:
                 p = psutil.Process(pid)
-                cmdline = Cmdline.args_to_cmdline(p.cmdline())
+                cmdline = Cmdline.args_to_cmdline(p.cmdline(), False)
                 if not re.fullmatch(pattern, cmdline.lower()): continue
                 pofs = p.open_files()
                 for pof in pofs:
@@ -276,7 +299,8 @@ class OSUtils:
                 stdout = f_stdout
 
             #create subprcess
-            p = subprocess.Popen(cmdline,
+            p = subprocess.Popen(
+                Cmdline(cmdline).cmdline,
                 stdout=stdout,
                 creationflags=creationflags,
                 **kwargs)
@@ -305,7 +329,7 @@ class OSUtils:
         """Run a command with shell or an application without shell.
 
         :param cmdline: Command line.
-        :param run_as_command: Whether to run command line as command or as application.
+        :param run_as_command: Whether to run command line as command or application.
             True to run it as command with shell, False to run it as application
             without shell.
         :returns: Returns return code of the command.  Returns None on failure.
@@ -349,15 +373,19 @@ class OSUtils:
             return []
 
     @classmethod
-    def where(cls, filename):
-        """Find file in current folder and folders in PATH.
+    def where(cls, filename, extra_paths=None):
+        """Find file in current folder, extra folders and folders in PATH.
 
         :param filename: File name.
+        :param extra_paths: A list of folder paths to be searched.  Or None to skip.
         :returns: Returns a list of full path of found files in order."""
         filepaths = []
         filepath = os.path.join(os.getcwd(), filename)
         if os.path.isfile(filepath): filepaths.append(filepath)
-        for path in cls.PATH:
+        search_paths = []
+        if extra_paths: search_paths += extra_paths
+        search_paths += cls.PATH
+        for path in search_paths:
             filepath = os.path.join(path, filename)
             if os.path.isfile(filepath):
                 if filepath not in filepaths: filepaths.append(filepath)
