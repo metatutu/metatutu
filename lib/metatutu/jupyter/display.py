@@ -181,13 +181,14 @@ class ProgressDisplay(HTMLDisplay):
 		self.show_progress_bar = True
 		self.progress_bar_width = "100%"
 		self.hide_progress_bar_on_finished = True
+		self.hide_text_on_finished = False
 
 		# control
 		self._progress = 0
 		self._total = 100
 		self._finished = False
 		self._start_ts = time.time()
-		self._end_ts = time.time()
+		self._end_ts = self._start_ts
 
 	def _get_html(self):
 		html = "<div>"
@@ -198,7 +199,10 @@ class ProgressDisplay(HTMLDisplay):
 				html += "<progress style='width:{}' max='{}' value='{}'></progress>".format(
 					self.progress_bar_width, self._total, self._progress)
 		if self.show_text:
-			html += "<p>{}</p>".format(self.get_text(self._finished))
+			if self._finished and self.hide_text_on_finished:
+				pass
+			else:
+				html += "<p>{}</p>".format(self.get_text(self._finished))
 		html += "</div>"
 		return html
 
@@ -236,6 +240,7 @@ class ProgressDisplay(HTMLDisplay):
 		self._total = total
 		self._finished = False
 		self._start_ts = time.time()
+		self._end_ts = self._start_ts
 		self._display_html(True)
 
 	def on_update(self, progress):
