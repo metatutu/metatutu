@@ -21,4 +21,4 @@ __PROJECT_URLS__ = {
 	"Forum": "https://github.com/metatutu/metatutu/issues",
 	"Donate": "https://github.com/metatutu/metatutu"
 }
-__BUILD__ = 77
+__BUILD__ = 79

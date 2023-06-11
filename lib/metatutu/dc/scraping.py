@@ -321,8 +321,8 @@ class HttpSession(Session):
                 elif method == "POST":
                     response = s.post(
                         url,
-                        data=kwargs.get("data", None),
-                        json=kwargs.get("json", None),
+                        data=kwargs.pop("data", None),
+                        json=kwargs.pop("json", None),
                         **kwargs)
                 else:
                     response = None
