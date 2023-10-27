@@ -328,6 +328,7 @@ class FileSystemUtils:
 		:returns: Result of action.
 		"""
 		try:
+			if create_parent: cls.create_parent_folder(filepath)
 			with open(filepath, "w", encoding=encoding) as f:
 				json.dump(data, f, indent="\t")
 			return True
