@@ -13,6 +13,7 @@ import time
 import requests
 import hashlib
 import chardet
+import json
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from bs4 import BeautifulSoup
@@ -231,6 +232,13 @@ class Session(ABC, LoggerHelper):
         except:
             content_str = str(content_bytes, errors='replace')
         return content_str
+    
+    @classmethod
+    def json_loads(cls, text):
+        try:
+            return json.loads(text)
+        except:
+            return None
 
 class HttpSession(Session):
     """Session with HTTP requests."""
