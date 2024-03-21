@@ -130,7 +130,7 @@ class HTMLDisplay(Display):
 		:param height: See ``display_div()``.
 		:param style: See ``display_div()``.
 
-		The table heads (columns head) will be sticky.
+		Top row (table head) will be sticky.
 		"""
 		if type(df) != pd.DataFrame: return
 		html_df = None
